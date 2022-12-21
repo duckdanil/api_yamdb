@@ -1,24 +1,22 @@
-from django.contrib.auth.models import AbstractUser
-from django.db import models
+import datetime as dt
 
+from django.contrib.auth.models import AbstractUser
+from django.core.validators import MaxValueValidator, MinValueValidator
+from django.db import models
 
 LENGTH_TEXT = 15
 MAX_LENGTH_TEXT = 256
-GENRES = [
-    'Сказка',
-    'Рок',
-    'Артхаус'
+MIN_SCORE = 1
+MAX_SCORE = 10
+ROLE = [
+    ('user', 'Пользователь'),
+    ('moderator', 'Модератор'),
+    ('admin', 'Администратор')
 ]
-ROLE_DEFAULT = 'user'
-ROLE = (
-    ROLE_DEFAULT,
-    'moderator',
-    'admin'
-)
 
 
 class User(AbstractUser):
-    """Кастомная модель пользователя"""
+    """Кастомная модель пользователя."""
 
     email = models.EmailField(
         max_length=254,
@@ -30,7 +28,7 @@ class User(AbstractUser):
     role = models.CharField(
         'Роль',
         choices=ROLE,
-        default=ROLE_DEFAULT,
+        default=ROLE[0],
         max_length=9
     )
 
@@ -38,7 +36,7 @@ class User(AbstractUser):
 class CategoryGenreCummonModel(models.Model):
     """
     Абстрактная модель.
-    Добавляет общие атрибуты для категорий и жанров
+    Добавляет общие атрибуты для категорий и жанров.
     """
 
     name = models.CharField(
@@ -58,13 +56,13 @@ class CategoryGenreCummonModel(models.Model):
         ordering = ('slug',)
 
     def __str__(self):
-        return self.slug[0:LENGTH_TEXT]
+        return f'{self.slug[0:LENGTH_TEXT]} {self.name[0:LENGTH_TEXT]}'
 
 
 class ReviewCommentCummonModel(models.Model):
     """
     Абстрактная модель.
-    Добавляет общие атрибуты для отзывов и комментариев
+    Добавляет общие атрибуты для отзывов и комментариев.
     """
 
     author = models.ForeignKey(
@@ -88,12 +86,14 @@ class ReviewCommentCummonModel(models.Model):
 
     def __str__(self):
         return (
-            f'{self.text[0:LENGTH_TEXT]}, {self.pub_date}, {self.author.username}'
+            f'{self.pk}, {self.text[0:LENGTH_TEXT]}..., '
+            f'{self.pub_date.strftime("%Y/%m/%d %H:%M:%S")}, '
+            f'{self.author.username}'
         )
 
 
 class Category(CategoryGenreCummonModel):
-    """Категории (типы) произведений"""
+    """Категории (типы) произведений."""
 
     class Meta:
         verbose_name = 'категорию'
@@ -101,7 +101,7 @@ class Category(CategoryGenreCummonModel):
 
 
 class Genre(CategoryGenreCummonModel):
-    """Категории жанров"""
+    """Категории жанров."""
 
     class Meta:
         verbose_name = 'жанры'
@@ -109,7 +109,7 @@ class Genre(CategoryGenreCummonModel):
 
 
 class Title(models.Model):
-    """Произведения, к которым пишут отзывы"""
+    """Произведения, к которым пишут отзывы."""
 
     name = models.CharField(
         'Наименование',
@@ -118,6 +118,13 @@ class Title(models.Model):
     )
     year = models.IntegerField(
         blank=True,
+        validators=[
+            MinValueValidator(1, 'Год не должен быть меньше 1!'),
+            MaxValueValidator(
+                int(dt.datetime.now().strftime('%Y')),
+                'Указать год из будущего не получится!'
+            )
+        ],
         verbose_name='Год',
         help_text='Введите год, в котором было издано произведение'
     )
@@ -152,14 +159,19 @@ class Title(models.Model):
         ordering = ('name',)
 
     def __str__(self):
-        return self.name[0:LENGTH_TEXT]
+        return (
+            f'{self.name[0:LENGTH_TEXT]} {self.year} '
+            f'{self.description[0:LENGTH_TEXT]} '
+            f'{self.category} {self.genre}'
+        )
 
 
 class GenreTitle(models.Model):
     """
     Одно произведение может быть привязано к нескольким жанрам.
-    В этой модели будут связаны id жанров и id произведений
+    В этой модели будут связаны id жанров и id произведений.
     """
+
     title = models.ForeignKey(
         Title,
         on_delete=models.CASCADE,
@@ -183,7 +195,8 @@ class GenreTitle(models.Model):
 
 
 class Review(ReviewCommentCummonModel):
-    """Отзывы на произведения"""
+    """Отзывы на произведения."""
+
     title = models.ForeignKey(
         Title,
         on_delete=models.CASCADE,
@@ -193,17 +206,25 @@ class Review(ReviewCommentCummonModel):
     )
     score = models.IntegerField(
         blank=True,
-        verbose_name='Рейтинг',
-        help_text='Введите рейтинг произведения'
+        validators=[
+            MinValueValidator(MIN_SCORE, f'Минимальная оценка {MIN_SCORE}!'),
+            MaxValueValidator(MAX_SCORE, f'Максимальная оценка {MAX_SCORE}!')
+        ],
+        verbose_name='Оценка',
+        help_text='Введите оценку произведения'
     )
 
     class Meta:
         verbose_name = "отзыв"
         verbose_name_plural = "Отзывы к произведениям"
+        constraints = [
+            models.UniqueConstraint(
+                fields=['author', 'title'], name='unique_review')
+        ]
 
 
 class Comment(ReviewCommentCummonModel):
-    """Комментарии к отзывам"""
+    """Комментарии к отзывам."""
 
     review = models.ForeignKey(
         Review,

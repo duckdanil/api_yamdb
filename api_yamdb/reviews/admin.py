@@ -1,6 +1,7 @@
 from django.contrib import admin
 
-from reviews.models import User, Category, Genre, Title, GenreTitle, Review, Comment
+from reviews.models import (Category, Comment, Genre, GenreTitle, Review,
+                            Title, User)
 
 
 class CategoryGenreAdmin(admin.ModelAdmin):
@@ -11,6 +12,7 @@ class CategoryGenreAdmin(admin.ModelAdmin):
     )
     list_editable = ('name', 'slug')
     prepopulated_fields = {'slug': ('name',)}
+    search_fields = ('name', 'slug')
 
 
 class CategoryAdmin(CategoryGenreAdmin):
@@ -30,6 +32,7 @@ class TitleAdmin(admin.ModelAdmin):
         'category'
     )
     list_editable = ('name', 'year', 'description', 'category')
+    search_fields = ('name',)
 
 
 class GenreTitleAdmin(admin.ModelAdmin):
@@ -39,6 +42,7 @@ class GenreTitleAdmin(admin.ModelAdmin):
         'title'
     )
     list_editable = ('genre', 'title')
+    search_fields = ('genre', 'title')
 
 
 class ReviewAdmin(admin.ModelAdmin):
@@ -51,6 +55,7 @@ class ReviewAdmin(admin.ModelAdmin):
         'score'
     )
     list_editable = ('author', 'title', 'text', 'score')
+    search_fields = ('author', 'title')
 
 
 class CommentAdmin(admin.ModelAdmin):
@@ -62,6 +67,7 @@ class CommentAdmin(admin.ModelAdmin):
         'text',
     )
     list_editable = ('author', 'review', 'text')
+    search_fields = ('text',)
 
 
 admin.site.register(User)
