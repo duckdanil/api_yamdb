@@ -9,19 +9,37 @@ GENRES = [
     'Рок',
     'Артхаус'
 ]
+ROLE_DEFAULT = 'user'
+ROLE = (
+    ROLE_DEFAULT,
+    'moderator',
+    'admin'
+)
 
 
 class User(AbstractUser):
     """Кастомная модель пользователя"""
 
+    email = models.EmailField(
+        max_length=254,
+    )
     bio = models.TextField(
         'Биография',
         blank=True,
     )
+    role = models.CharField(
+        'Роль',
+        choices=ROLE,
+        default=ROLE_DEFAULT,
+        max_length=9
+    )
 
 
-class CreatedModel(models.Model):
-    """Абстрактная модель. Добавляет разные атрибуты"""
+class CategoryGenreCummonModel(models.Model):
+    """
+    Абстрактная модель.
+    Добавляет общие атрибуты для категорий и жанров
+    """
 
     name = models.CharField(
         'Наименование',
@@ -43,20 +61,51 @@ class CreatedModel(models.Model):
         return self.slug[0:LENGTH_TEXT]
 
 
-class Category(CreatedModel):
+class ReviewCommentCummonModel(models.Model):
+    """
+    Абстрактная модель.
+    Добавляет общие атрибуты для отзывов и комментариев
+    """
+
+    author = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='%(class)ss',
+        verbose_name='Автор',
+        help_text='Укажите автора')
+    pub_date = models.DateTimeField(
+        'Дата публикации',
+        auto_now_add=True
+    )
+    text = models.TextField(
+        'Текст',
+        help_text='Введите текст'
+    )
+
+    class Meta:
+        abstract = True
+        ordering = ('-pub_date',)
+
+    def __str__(self):
+        return (
+            f'{self.text[0:LENGTH_TEXT]}, {self.pub_date}, {self.author.username}'
+        )
+
+
+class Category(CategoryGenreCummonModel):
     """Категории (типы) произведений"""
 
     class Meta:
         verbose_name = 'категорию'
-        verbose_name_plural = 'Категории на портале'
+        verbose_name_plural = 'Категории'
 
 
-class Genre(CreatedModel):
+class Genre(CategoryGenreCummonModel):
     """Категории жанров"""
 
     class Meta:
         verbose_name = 'жанры'
-        verbose_name_plural = 'Жанры на портале'
+        verbose_name_plural = 'Жанры'
 
 
 class Title(models.Model):
@@ -65,17 +114,18 @@ class Title(models.Model):
     name = models.CharField(
         'Наименование',
         max_length=MAX_LENGTH_TEXT,
-        help_text='Введите наименование'
+        help_text='Введите наименование произведения'
     )
     year = models.IntegerField(
         blank=True,
         verbose_name='Год',
-        help_text='Год в котором было издано произведение'
+        help_text='Введите год, в котором было издано произведение'
     )
     description = models.TextField(
         'Описание',
         blank=True,
-        null=True
+        null=True,
+        help_text='Введите описание произведения'
     )
     category = models.ForeignKey(
         Category,
@@ -84,22 +134,21 @@ class Title(models.Model):
         on_delete=models.SET_NULL,
         related_name='titles',
         verbose_name='Категория',
-        help_text='Категория, к которой будет относиться произведение'
+        help_text='Введите категорию, к которой будет относиться произведение'
     )
     genre = models.ManyToManyField(
         Genre,
         through='GenreTitle',
         blank=True,
         null=True,
-        on_delete=models.SET_NULL,
         related_name='genres',
         verbose_name='Жанр',
-        help_text='Жанр, к которому будет относиться произведение'
+        help_text='Введите жанр, к которому будет относиться произведение'
     )
 
     class Meta:
-        verbose_name = 'произведению'
-        verbose_name_plural = 'Произведения на портале'
+        verbose_name = 'произведение'
+        verbose_name_plural = 'Произведения'
         ordering = ('name',)
 
     def __str__(self):
@@ -109,30 +158,61 @@ class Title(models.Model):
 class GenreTitle(models.Model):
     """
     Одно произведение может быть привязано к нескольким жанрам.
-    В этой модели будут связаны id жанров и id произведений)
+    В этой модели будут связаны id жанров и id произведений
     """
+    title = models.ForeignKey(
+        Title,
+        on_delete=models.CASCADE,
+        verbose_name="Произведение",
+        help_text='Введите ID произведения'
+    )
     genre = models.ForeignKey(
         Genre,
         on_delete=models.CASCADE,
         verbose_name="Жанр",
-        help_text='ID жанров'
+        help_text='Введите ID жанра'
     )
-    title = models.ForeignKey(
-        Title,
-        on_delete=models.CASCADE,
-        verbose_name="Произведения",
-        help_text='ID произведений'
-    )
-    
+
     class Meta:
-        verbose_name = "произведению и жанру"
-        verbose_name_plural = "Произведения и жанры на портале"
-        ordering = ('name',)
+        verbose_name = "произведению нужные жанры"
+        verbose_name_plural = "Произведения и жанры"
+        ordering = ('genre',)
 
     def __str__(self):
         return f'{self.title} {self.genre}'
 
-    # Ресурс reviews: отзывы на произведения. Отзыв привязан к определённому произведению.
-    # При удалении объекта произведения Title должны удаляться все отзывы к этому произведению и комментарии к ним.
-    # При удалении объекта отзыва Review должны быть удалены все комментарии к этому отзыву.
-    # Ресурс comments: комментарии к отзывам. Комментарий привязан к определённому отзыву.
+
+class Review(ReviewCommentCummonModel):
+    """Отзывы на произведения"""
+    title = models.ForeignKey(
+        Title,
+        on_delete=models.CASCADE,
+        related_name='reviews',
+        verbose_name="Произведение",
+        help_text='Укажите произведение, к которому будет относиться отзыв'
+    )
+    score = models.IntegerField(
+        blank=True,
+        verbose_name='Рейтинг',
+        help_text='Введите рейтинг произведения'
+    )
+
+    class Meta:
+        verbose_name = "отзыв"
+        verbose_name_plural = "Отзывы к произведениям"
+
+
+class Comment(ReviewCommentCummonModel):
+    """Комментарии к отзывам"""
+
+    review = models.ForeignKey(
+        Review,
+        on_delete=models.CASCADE,
+        related_name='comments',
+        verbose_name="Отзыв",
+        help_text='Укажите отзыв, к которому будет относиться комментарий'
+    )
+
+    class Meta:
+        verbose_name = "комментарий"
+        verbose_name_plural = "Комментарии к отзывам"
