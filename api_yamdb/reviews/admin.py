@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from reviews.models import User, Category, Genry
+from reviews.models import User, Category, Genre
 
 
 class CummonAdmin(admin.ModelAdmin):
@@ -17,7 +17,7 @@ class CategoryAdmin(CummonAdmin):
     ...
 
 
-class GenryAdmin(CummonAdmin):
+class GenreAdmin(CummonAdmin):
     ...
 
 
@@ -25,4 +25,4 @@ admin.site.register(User)
 
 admin.site.register(Category, CategoryAdmin)
 
-admin.site.register(Genry, GenryAdmin)
+admin.site.register(Genre, GenreAdmin)
