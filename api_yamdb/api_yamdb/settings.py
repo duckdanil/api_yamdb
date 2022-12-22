@@ -105,3 +105,8 @@ STATIC_URL = '/static/'
 STATICFILES_DIRS = ((BASE_DIR / 'static/'),)
 
 AUTH_USER_MODEL = 'reviews.User'
+
+# Минимальная оценка произведения
+MIN_SCORE = 1
+# Максимальная оценка произведения
+MAX_SCORE = 10
