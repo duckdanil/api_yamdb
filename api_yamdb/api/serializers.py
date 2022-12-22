@@ -1,10 +1,9 @@
-from rest_framework.serializers import (CurrentUserDefault, ModelSerializer,
-                                        SlugRelatedField, ValidationError)
-from rest_framework.validators import UniqueTogetherValidator
-from rest_framework import serializers
+from django.conf import settings
+from rest_framework.serializers import (CharField, EmailField, IntegerField,
+                                        ModelSerializer, Serializer,
+                                        SlugRelatedField)
 
 from reviews.models import Category, Comment, Genre, Review, Title, User
-from django.conf import settings
 
 
 class CategorySerializer(ModelSerializer):
@@ -26,10 +25,9 @@ class GenreSerializer(ModelSerializer):
 class TitleSerializer(ModelSerializer):
     """Сериализатор для модели Title."""
 
-    # category = CategorySerializer(required=False)
-    category = serializers.SlugRelatedField(read_only=True, slug_field='name')
-    genre = GenreSerializer(many=True, required=False) 
-    rating = serializers.IntegerField(
+    category = SlugRelatedField(read_only=True, slug_field='name')
+    genre = GenreSerializer(many=True, required=False)
+    rating = IntegerField(
         max_value=settings.MIN_SCORE, min_value=settings.MAX_SCORE
     )
 
@@ -40,6 +38,7 @@ class TitleSerializer(ModelSerializer):
 
 class ReviewSerializer(ModelSerializer):
     """Сериализатор для модели Review."""
+
     author = SlugRelatedField(read_only=True, slug_field='username')
 
     class Meta:
@@ -49,21 +48,12 @@ class ReviewSerializer(ModelSerializer):
 
 class CommentSerializer(ModelSerializer):
     """Сериализатор для модели Comment."""
+
     author = SlugRelatedField(read_only=True, slug_field='username')
 
     class Meta:
         model = Comment
         fields = '__all__'
-
-# class RegistrationSerializer(serializers.Serializer, ValidateUsername):
-#    """Сериализатор регистрации User"""
-#    username = serializers.CharField(required=True, max_length=USERNAME_NAME)
-#    email = serializers.EmailField(required=True, max_length=EMAIL)
-
-#class TokenSerializer(serializers.Serializer, ValidateUsername):
-#    """Сериализатор токена"""
-#    username = serializers.CharField(required=True, max_length=USERNAME_NAME)
-#    confirmation_code = serializers.CharField(required=True)
 
 
 class UserSerializer(ModelSerializer):
@@ -74,3 +64,19 @@ class UserSerializer(ModelSerializer):
         fields = (
             'email', 'username', 'first_name', 'last_name', 'bio', 'role'
         )
+
+
+class SignupSerializer(Serializer):
+    """Сериализатор для функции Signup."""
+
+    email = EmailField(max_length=settings.MAX_LENGTH_EMAIL, allow_blank=False)
+    username = CharField(
+        required=True, max_length=settings.MAX_LENGTH_USERNAME)
+
+
+class GettokenSerializer(ModelSerializer):
+    """Сериализатор для функции get_token."""
+
+    username = CharField(
+        required=True, max_length=settings.MAX_LENGTH_USERNAME)
+    confirmation_code = CharField(required=True)

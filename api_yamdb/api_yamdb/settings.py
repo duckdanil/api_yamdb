@@ -110,3 +110,7 @@ AUTH_USER_MODEL = 'reviews.User'
 MIN_SCORE = 1
 # Максимальная оценка произведения
 MAX_SCORE = 10
+# Максимальная длина адреса электронной почты
+MAX_LENGTH_EMAIL = 254
+# Максимальная длина username
+MAX_LENGTH_USERNAME = 150
