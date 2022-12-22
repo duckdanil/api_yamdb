@@ -34,7 +34,7 @@ def signup():
     """
     ...
 
-def token():
+def get_token():
     """
     Пользователь отправляет POST-запрос с параметрами
     username и confirmation_code на эндпоинт,

@@ -1,7 +1,8 @@
-from api.views import (CategoryViewSet, CommentViewSet, GenreViewSet, me,
-                       ReviewViewSet, signup, TitleViewSet, token, users)
 from django.urls import include, path
 from rest_framework.routers import DefaultRouter
+
+from api.views import (CategoryViewSet, CommentViewSet, GenreViewSet, me,
+                       ReviewViewSet, signup, TitleViewSet, token, users)
 
 router_v1 = DefaultRouter()
 router_v1.register('categories', CategoryViewSet, basename='categories')
@@ -23,5 +24,4 @@ urlpatterns = [
     path('v1/auth/token/', token, name='token'),
     path('v1/users/me/', me, name='me'),
     path('v1/users/<str:username>/', users, name='users'),
-    # path('profile/<str:username>/unfollow/', views.profile_unfollow, name='profile_unfollow'),
 ]
