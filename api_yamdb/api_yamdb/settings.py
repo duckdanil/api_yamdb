@@ -108,9 +108,15 @@ AUTH_USER_MODEL = 'reviews.User'
 
 # Минимальная оценка произведения
 MIN_SCORE = 1
+MIN_SCORE_MESSAGE = f'Минимальная оценка {MIN_SCORE}!'
 # Максимальная оценка произведения
 MAX_SCORE = 10
+MAX_SCORE_MESSAGE = f'Максимальная оценка {MAX_SCORE}!'
 # Максимальная длина адреса электронной почты
 MAX_LENGTH_EMAIL = 254
 # Максимальная длина username
 MAX_LENGTH_USERNAME = 150
+# Минимальный год издания произведения
+MIN_YEAR_TITLE = 1
+SMALL_YEAR_MESSAGE = 'Год не должен быть меньше {MIN_YEAR_TITLE}'
+BIG_YEAR_MESSAGE = 'Указать год из будущего не получится!'

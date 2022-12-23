@@ -1,9 +1,16 @@
-from django.conf import settings
+import datetime as dt
+
 from rest_framework.serializers import (CharField, EmailField, IntegerField,
                                         ModelSerializer, Serializer,
-                                        SlugRelatedField)
+                                        SlugRelatedField, ValidationError)
+from rest_framework.validators import UniqueTogetherValidator
 
+from django.conf import settings
 from reviews.models import Category, Comment, Genre, Review, Title, User
+
+
+REVIEW_EXIST = 'Можно оставить только один отзыв на произведение!'
+BAD_USERNAME = 'Нельзя использовать в качестве username {username}'
 
 
 class CategorySerializer(ModelSerializer):
@@ -35,6 +42,20 @@ class TitleSerializer(ModelSerializer):
         model = Title
         fields = '__all__'
 
+    def validate_year(self, value):
+        if value < settings.MIN_YEAR_TITLE:
+            raise ValidationError(settings.SMALL_YEAR_MESSAGE)
+        if value > int(dt.datetime.now().strftime('%Y')):
+            raise ValidationError(settings.BIG_YEAR_MESSAGE)
+        return value
+
+    def validate_score(self, value):
+        if value < settings.MIN_SCORE:
+            raise ValidationError(settings.MIN_SCORE_MESSAGE)
+        if value > int(dt.datetime.now().strftime('%Y')):
+            raise ValidationError(settings.MAX_SCORE_MESSAGE)
+        return value
+
 
 class ReviewSerializer(ModelSerializer):
     """Сериализатор для модели Review."""
@@ -44,6 +65,13 @@ class ReviewSerializer(ModelSerializer):
     class Meta:
         model = Review
         fields = '__all__'
+        validators = [
+            UniqueTogetherValidator(
+                queryset=Review.objects.all(),
+                fields=('title', 'author'),
+                message=REVIEW_EXIST
+            )
+        ]
 
 
 class CommentSerializer(ModelSerializer):
@@ -72,6 +100,11 @@ class SignupSerializer(Serializer):
     email = EmailField(max_length=settings.MAX_LENGTH_EMAIL, allow_blank=False)
     username = CharField(
         required=True, max_length=settings.MAX_LENGTH_USERNAME)
+
+    def validate_username(self, value):
+        if value.lower() == 'me':
+            raise ValidationError(BAD_USERNAME.format(username=value))
+        return value
 
 
 class GettokenSerializer(ModelSerializer):
