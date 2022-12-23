@@ -4,10 +4,11 @@ from django.contrib.auth.models import AbstractUser
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 
+from django.conf import settings
+
+
 LENGTH_TEXT = 15
 MAX_LENGTH_TEXT = 256
-MIN_SCORE = 1
-MAX_SCORE = 10
 ROLE = [
     ('user', 'Пользователь'),
     ('moderator', 'Модератор'),
@@ -19,7 +20,7 @@ class User(AbstractUser):
     """Кастомная модель пользователя."""
 
     email = models.EmailField(
-        max_length=254,
+        max_length=settings.MAX_LENGTH_EMAIL,
     )
     bio = models.TextField(
         'Биография',
@@ -207,8 +208,14 @@ class Review(ReviewCommentCummonModel):
     score = models.IntegerField(
         blank=True,
         validators=[
-            MinValueValidator(MIN_SCORE, f'Минимальная оценка {MIN_SCORE}!'),
-            MaxValueValidator(MAX_SCORE, f'Максимальная оценка {MAX_SCORE}!')
+            MinValueValidator(
+                settings.MIN_SCORE,
+                f'Минимальная оценка {settings.MIN_SCORE}!'
+            ),
+            MaxValueValidator(
+                settings.MAX_SCORE,
+                f'Максимальная оценка {settings.MAX_SCORE}!'
+            )
         ],
         verbose_name='Оценка',
         help_text='Введите оценку произведения'

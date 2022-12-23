@@ -67,7 +67,7 @@ class CommentAdmin(admin.ModelAdmin):
         'text',
     )
     list_editable = ('author', 'review', 'text')
-    search_fields = ('text',)
+    search_fields = ('text', 'author__username')
 
 
 admin.site.register(User)
