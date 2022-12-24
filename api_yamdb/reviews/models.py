@@ -118,12 +118,14 @@ class Title(models.Model):
         help_text='Введите наименование произведения'
     )
     year = models.IntegerField(
-        blank=True,
         validators=[
-            MinValueValidator(1, 'Год не должен быть меньше 1!'),
+            MinValueValidator(
+                settings.MIN_YEAR_TITLE,
+                settings.SMALL_YEAR_MESSAGE
+            ),
             MaxValueValidator(
                 int(dt.datetime.now().strftime('%Y')),
-                'Указать год из будущего не получится!'
+                settings.BIG_YEAR_MESSAGE
             )
         ],
         verbose_name='Год',
@@ -137,7 +139,6 @@ class Title(models.Model):
     )
     category = models.ForeignKey(
         Category,
-        blank=True,
         null=True,
         on_delete=models.SET_NULL,
         related_name='titles',
@@ -147,7 +148,6 @@ class Title(models.Model):
     genre = models.ManyToManyField(
         Genre,
         through='GenreTitle',
-        blank=True,
         null=True,
         related_name='genres',
         verbose_name='Жанр',
@@ -206,15 +206,12 @@ class Review(ReviewCommentCummonModel):
         help_text='Укажите произведение, к которому будет относиться отзыв'
     )
     score = models.IntegerField(
-        blank=True,
         validators=[
             MinValueValidator(
-                settings.MIN_SCORE,
-                f'Минимальная оценка {settings.MIN_SCORE}!'
+                settings.MIN_SCORE, settings.MIN_SCORE_MESSAGE
             ),
             MaxValueValidator(
-                settings.MAX_SCORE,
-                f'Максимальная оценка {settings.MAX_SCORE}!'
+                settings.MAX_SCORE, settings.MAX_SCORE_MESSAGE
             )
         ],
         verbose_name='Оценка',
