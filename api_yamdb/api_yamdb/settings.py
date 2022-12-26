@@ -125,7 +125,13 @@ SMALL_YEAR_MESSAGE = 'Год не должен быть меньше {MIN_YEAR_T
 BIG_YEAR_MESSAGE = 'Указать год из будущего не получится!'
 # Email
 load_dotenv()
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+# SMTP backend
+# EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+# Backend для эмуляции почтового сервера
+EMAIL_BACKEND = 'django.core.mail.backends.filebased.EmailBackend'
+# Директория для писем при эмуляции
+EMAIL_FILE_PATH = os.path.join(BASE_DIR, 'sent_emails')
+
 EMAIL_HOST = os.getenv('EMAIL_HOST')
 EMAIL_PORT = os.getenv('EMAIL_PORT')
 EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')

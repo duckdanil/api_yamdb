@@ -18,11 +18,17 @@ from reviews.models import Category, Genre, Review, Title, User
 EMAIL_THEME = 'Сервис YaMDB ждет подтверждания email'
 EMAIL_BODY = 'Для подтверждения email воспользуйтесь этим кодом: {code}'
 
-def send_email(email, confirmation_code):
+
+def send_email_with_confirmation_code(email, confirmation_code):
     """
     Сервис YaMDB отправляет письмо с кодом подтверждения
     (confirmation_code) на указанный адрес email.
     https://docs.djangoproject.com/en/4.1/topics/email/
+    Для тестирования эмулятора:
+    from django.conf import settings
+    import api.views
+    from api.views import send_email_with_confirmation_code
+    send_email_with_confirmation_code('first_user@yandex.ru', '12345')
     """
     send_mail(
         EMAIL_THEME,
