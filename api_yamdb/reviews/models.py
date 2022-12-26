@@ -9,9 +9,9 @@ from django.conf import settings
 
 LENGTH_TEXT = 15
 MAX_LENGTH_TEXT = 256
-ADMIN='admin'
-USER='user'
-MODERATOR='moderator'
+ADMIN = 'admin'
+USER = 'user'
+MODERATOR = 'moderator'
 ROLE = [
     (USER, 'Пользователь'),
     (MODERATOR, 'Модератор'),

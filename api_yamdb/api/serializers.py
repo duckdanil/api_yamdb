@@ -94,12 +94,12 @@ class UserSerializer(ModelSerializer):
         )
 
 
-class SignupSerializer(Serializer):
+class SignupSerializer(ModelSerializer):
     """Сериализатор для функции Signup."""
 
-    email = EmailField(max_length=settings.MAX_LENGTH_EMAIL, allow_blank=False)
-    username = CharField(
-        required=True, max_length=settings.MAX_LENGTH_USERNAME)
+    class Meta:
+        model = User
+        fields = ('email', 'username')
 
     def validate_username(self, value):
         if value.lower() == 'me':
