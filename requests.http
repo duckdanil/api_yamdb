@@ -1,7 +1,17 @@
+###
 POST http://127.0.0.1:8000/api/v1/auth/signup/
 Content-Type: application/json
 
 {
-    "username": "admin4",
-    "email": "admin4@admin.ru"
+    "username": "admin6",
+    "email": "admin6@admin.ru"
 }
+###
+POST http://127.0.0.1:8000/api/v1/auth/token/
+Content-Type: application/json
+
+{
+    "username": "admin4",
+    "confirmation_code": "RsJat0FWLq7hLcXjHFeTfNpHx1hwoIYGGGAZg7bAC77ap6oI6DSnBagEPzgRQQoX"
+}
+###

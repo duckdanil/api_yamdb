@@ -1,6 +1,6 @@
 import datetime as dt
 
-from rest_framework.serializers import (CharField, EmailField, IntegerField,
+from rest_framework.serializers import (CharField, IntegerField,
                                         ModelSerializer, Serializer,
                                         SlugRelatedField, ValidationError)
 from rest_framework.validators import UniqueTogetherValidator
@@ -107,9 +107,11 @@ class SignupSerializer(ModelSerializer):
         return value
 
 
-class GettokenSerializer(ModelSerializer):
+class GettokenSerializer(Serializer):
     """Сериализатор для функции get_token."""
 
     username = CharField(
         required=True, max_length=settings.MAX_LENGTH_USERNAME)
-    confirmation_code = CharField(required=True)
+    confirmation_code = CharField(
+        required=True, max_length=settings.CONFIRMATION_CODE_LENGTH
+    )

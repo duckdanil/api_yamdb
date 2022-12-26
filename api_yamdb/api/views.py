@@ -6,7 +6,6 @@ from api.serializers import (CategorySerializer, CommentSerializer,
                              GenreSerializer, GettokenSerializer,
                              ReviewSerializer, SignupSerializer,
                              TitleSerializer)
-from django.conf import settings
 from django.core.mail import send_mail
 from django.db.models import Avg
 from django.shortcuts import get_object_or_404
@@ -17,14 +16,20 @@ from rest_framework.mixins import (CreateModelMixin, DestroyModelMixin,
                                    ListModelMixin)
 from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet, ModelViewSet
+from rest_framework_simplejwt.tokens import RefreshToken
+
+from django.conf import settings
 from reviews.models import Category, Genre, Review, Title, User
+
 
 EMAIL_THEME = 'Сервис YaMDB ждет подтверждания email'
 EMAIL_BODY = 'Для подтверждения email воспользуйтесь этим кодом: {code}'
 SEND_EMAIL = 'Код подтверждения отправлен на почту {email}'
 USERNAME_USED = 'Пользователь {username} уже существует!'
 EMAIL_USED = 'Почта {email} используется другим пользователем!'
-SEND_MAIL_ERROR = 'Не удалось отправь электронное письмо на {email}. Ошибка: {error}'
+SEND_MAIL_ERROR = (
+    'Не удалось отправь электронное письмо на {email}. Ошибка: {error}'
+)
 
 
 def send_email_with_confirmation_code(email, confirmation_code):
@@ -37,13 +42,19 @@ def send_email_with_confirmation_code(email, confirmation_code):
     from api.views import send_email_with_confirmation_code
     send_email_with_confirmation_code('first_user@yandex.ru', '12345')
     """
-    send_mail(
-        EMAIL_THEME,
-        EMAIL_BODY.format(code=confirmation_code),
-        settings.EMAIL_HOST_USER,
-        [email, ],
-        fail_silently=False,
-    )
+    try:
+        send_mail(
+            EMAIL_THEME,
+            EMAIL_BODY.format(code=confirmation_code),
+            settings.EMAIL_HOST_USER,
+            [email, ],
+            fail_silently=False,
+        )
+    except Exception as error:
+        return Response(
+            {'status': SEND_MAIL_ERROR.format(email=email, error=error)},
+            status=status.HTTP_408_REQUEST_TIMEOUT
+        )
 
 
 class ModelMixinSet(CreateModelMixin, ListModelMixin,
@@ -125,6 +136,16 @@ class UserViewSet(ModelViewSet):
     # serializer_class = UserSerializer
 
 
+def generate_confirmation_code():
+    """Генерирует код подтверждения."""
+    return (
+        ''.join(random.choices(
+            ascii_uppercase + digits + ascii_lowercase,
+            k=settings.CONFIRMATION_CODE_LENGTH)
+        )
+    )
+
+
 @api_view(['POST'])
 def signup(request):
     """
@@ -136,32 +157,38 @@ def signup(request):
     if serializer.is_valid():
         username = serializer.validated_data['username']
         email = serializer.validated_data['email']
-        if User.objects.filter(username=username).exists():
-            return Response(
-                {'status': USERNAME_USED.format(username=username)},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        if User.objects.filter(email=email).exists():
-            return Response(
-                {'status': EMAIL_USED.format(email=email)},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        confirmation_code = ''.join(
-            random.choices(
-                ascii_uppercase + digits + ascii_lowercase,
-                k=settings.CONFIRMATION_CODE_LENGTH
-            )
-        )
-        try:
+        user_exist = User.objects.filter(username=username).exists()
+        # Пользователь может быть создан ранее посредством
+        # панели администрирования, тогда confirmation_code не будет задан
+        if (
+            user_exist
+            and not User.objects.get(username=username).confirmation_code
+        ):
+            confirmation_code = generate_confirmation_code()
+            send_email_with_confirmation_code(email, confirmation_code)
+        # Пользователь может быть создан ранее посредством API,
+        # тогда confirmation_code будет задан
+        elif user_exist:
+            confirmation_code = User.objects.get(
+                username=username).confirmation_code
+            send_email_with_confirmation_code(email, confirmation_code)
+        # Пользователь создается впервые
+        else:
+            if User.objects.filter(username=username).exists():
+                return Response(
+                    {'status': USERNAME_USED.format(username=username)},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            if User.objects.filter(email=email).exists():
+                return Response(
+                    {'status': EMAIL_USED.format(email=email)},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            confirmation_code = generate_confirmation_code()
             send_email_with_confirmation_code(email, confirmation_code)
             User.objects.create(
                 username=username, email=email,
                 confirmation_code=confirmation_code
-            )
-        except Exception as error:
-            return Response(
-                {'status': SEND_MAIL_ERROR.format(email=email, error=error)},
-                status=status.HTTP_408_REQUEST_TIMEOUT
             )
         return Response(
             {'status': SEND_EMAIL.format(email=email)},
@@ -170,11 +197,24 @@ def signup(request):
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-def get_token():
+@api_view(['POST'])
+def get_token(request):
     """
     Пользователь отправляет POST-запрос с параметрами
     username и confirmation_code на эндпоинт,
     в ответе на запрос ему приходит token (JWT-токен).
     """
-    ...
-    # serializer_class = GettokenSerializer
+    serializer = GettokenSerializer(data=request.data)
+    if serializer.is_valid():
+        username = serializer.validated_data['username']
+        confirmation_code = serializer.validated_data['confirmation_code']
+        user = get_object_or_404(
+            User, username=username, confirmation_code=confirmation_code
+        )
+        return Response(
+            {
+                'access': str(RefreshToken.for_user(user).access_token)
+            },
+            status=status.HTTP_200_OK
+        )
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
