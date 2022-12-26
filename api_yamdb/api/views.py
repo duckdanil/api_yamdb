@@ -1,16 +1,36 @@
+from api.permissions import AdminOrModeratorOrAuthorOrReadOnly, AdminOrReadOnly
+from api.serializers import (CategorySerializer, CommentSerializer,
+                             GenreSerializer, GettokenSerializer,
+                             ReviewSerializer, SignupSerializer,
+                             TitleSerializer)
+from django.conf import settings
+from django.core.mail import send_mail
 from django.db.models import Avg
 from django.shortcuts import get_object_or_404
 from rest_framework.filters import SearchFilter
-from rest_framework.viewsets import ModelViewSet, GenericViewSet
-from rest_framework.mixins import (ListModelMixin, CreateModelMixin,
-                                   DestroyModelMixin)
+from rest_framework.mixins import (CreateModelMixin, DestroyModelMixin,
+                                   ListModelMixin)
+from rest_framework.viewsets import GenericViewSet, ModelViewSet
+
 from reviews.models import Category, Genre, Review, Title, User
 
-from api.permissions import AdminOrReadOnly, AdminOrModeratorOrAuthorOrReadOnly
-from api.serializers import (CategorySerializer, CommentSerializer,
-                             GenreSerializer,
-                             GettokenSerializer, ReviewSerializer,
-                             SignupSerializer, TitleSerializer)
+
+EMAIL_THEME = 'Сервис YaMDB ждет подтверждания email'
+EMAIL_BODY = 'Для подтверждения email воспользуйтесь этим кодом: {code}'
+
+def send_email(email, confirmation_code):
+    """
+    Сервис YaMDB отправляет письмо с кодом подтверждения
+    (confirmation_code) на указанный адрес email.
+    https://docs.djangoproject.com/en/4.1/topics/email/
+    """
+    send_mail(
+        EMAIL_THEME,
+        EMAIL_BODY.format(code=confirmation_code),
+        settings.EMAIL_HOST_USER,
+        [email, ],
+        fail_silently=False,
+    )
 
 
 class ModelMixinSet(CreateModelMixin, ListModelMixin,

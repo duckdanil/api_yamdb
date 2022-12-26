@@ -1,4 +1,7 @@
+import os
+
 from pathlib import Path
+from dotenv import load_dotenv
 
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -120,3 +123,11 @@ MAX_LENGTH_USERNAME = 150
 MIN_YEAR_TITLE = 1
 SMALL_YEAR_MESSAGE = 'Год не должен быть меньше {MIN_YEAR_TITLE}'
 BIG_YEAR_MESSAGE = 'Указать год из будущего не получится!'
+# Email
+load_dotenv()
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = os.getenv('EMAIL_HOST')
+EMAIL_PORT = os.getenv('EMAIL_PORT')
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
+EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS')
