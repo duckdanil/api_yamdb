@@ -11,6 +11,8 @@ from reviews.models import Category, Comment, Genre, Review, Title, User
 
 REVIEW_EXIST = 'Можно оставить только один отзыв на произведение!'
 BAD_USERNAME = 'Нельзя использовать в качестве username {username}'
+USERNAME_USED = 'Пользователь {username} уже существует!'
+EMAIL_USED = 'Почта {email} используется другим пользователем!'
 
 
 class CategorySerializer(ModelSerializer):
@@ -105,6 +107,16 @@ class SignupSerializer(Serializer):
         if value.lower() == 'me':
             raise ValidationError(BAD_USERNAME.format(username=value))
         return value
+    
+    def create(self, validated_data):
+        username = validated_data.pop('username')
+        email = validated_data.pop('email')
+        if User.objects.get(username=username):
+            raise ValidationError(USERNAME_USED.format(username=username))
+        if User.objects.get(email=email):
+            raise ValidationError(EMAIL_USED.format(email=email))
+        user = User.objects.create(**validated_data)
+        return user
 
 
 class GettokenSerializer(ModelSerializer):

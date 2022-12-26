@@ -13,10 +13,16 @@ from rest_framework.mixins import (CreateModelMixin, DestroyModelMixin,
 from rest_framework.viewsets import GenericViewSet, ModelViewSet
 
 from reviews.models import Category, Genre, Review, Title, User
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from rest_framework import status
 
 
 EMAIL_THEME = 'Сервис YaMDB ждет подтверждания email'
 EMAIL_BODY = 'Для подтверждения email воспользуйтесь этим кодом: {code}'
+SEND_EMAIL = 'Код подтверждения отправлен на почту {email}'
+USERNAME_USED = 'Пользователь {username} уже существует!'
+EMAIL_USED = 'Почта {email} используется другим пользователем!'
 
 
 def send_email_with_confirmation_code(email, confirmation_code):
@@ -24,9 +30,8 @@ def send_email_with_confirmation_code(email, confirmation_code):
     Сервис YaMDB отправляет письмо с кодом подтверждения
     (confirmation_code) на указанный адрес email.
     https://docs.djangoproject.com/en/4.1/topics/email/
-    Для тестирования эмулятора:
-    from django.conf import settings
-    import api.views
+    
+    Для тестирования эмулятора в режиме отладки выполнить в консоли:
     from api.views import send_email_with_confirmation_code
     send_email_with_confirmation_code('first_user@yandex.ru', '12345')
     """
@@ -118,15 +123,33 @@ class UserViewSet(ModelViewSet):
     # serializer_class = UserSerializer
 
 
-def signup():
+@api_view(['POST'])
+def signup(request):
     """
     Пользователь отправляет POST-запрос на добавление нового пользователя
     с параметрами email и username. Функция отправляет письмо с кодом
     подтверждения (confirmation_code) на адрес email.
     """
-
-    ...
-    # serializer_class = SignupSerializer
+    serializer = SignupSerializer(data=request.data)
+    if serializer.is_valid():
+        username = serializer.validated_data['username']
+        email = serializer.validated_data['email']
+        if User.objects.filter(username=username).exists():
+            return Response(
+                {'status': USERNAME_USED.format(username=username)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        if User.objects.filter(email=email).exists():
+            return Response(
+                {'status': EMAIL_USED.format(email=email)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        send_email_with_confirmation_code(email, '12345')
+        return Response(
+            {'status': SEND_EMAIL.format(email=email)},
+            status=status.HTTP_200_OK
+        )
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 def get_token():
