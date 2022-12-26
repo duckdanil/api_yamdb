@@ -32,6 +32,11 @@ class User(AbstractUser):
         default=ROLE[0],
         max_length=9
     )
+    confirmation_code = models.CharField(
+        'Код подтверждения для API',
+        blank=True,
+        max_length=settings.CONFIRMATION_CODE_LENGTH
+    )
 
     @property
     def is_admin(self):
