@@ -152,7 +152,6 @@ def signup(request):
                 k=settings.CONFIRMATION_CODE_LENGTH
             )
         )
-        print(confirmation_code)
         try:
             send_email_with_confirmation_code(email, confirmation_code)
             User.objects.create(
@@ -160,7 +159,10 @@ def signup(request):
                 confirmation_code=confirmation_code
             )
         except Exception as error:
-            print(SEND_MAIL_ERROR.format(email=email, error=error))
+            return Response(
+                {'status': SEND_MAIL_ERROR.format(email=email, error=error)},
+                status=status.HTTP_408_REQUEST_TIMEOUT
+            )
         return Response(
             {'status': SEND_EMAIL.format(email=email)},
             status=status.HTTP_200_OK
