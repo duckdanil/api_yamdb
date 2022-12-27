@@ -72,6 +72,7 @@ class ReviewSerializer(ModelSerializer):
                 message=REVIEW_EXIST
             )
         ]
+        read_only_fields = ('title',)
 
 
 class CommentSerializer(ModelSerializer):
