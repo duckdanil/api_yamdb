@@ -1,6 +1,8 @@
 import random
+from smtplib import SMTPResponseException
 from string import ascii_lowercase, ascii_uppercase, digits
 
+from django.conf import settings
 from django.core.mail import send_mail
 from django.db.models import Avg
 from django.shortcuts import get_object_or_404
@@ -12,16 +14,12 @@ from rest_framework.mixins import (CreateModelMixin, DestroyModelMixin,
 from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet, ModelViewSet
 from rest_framework_simplejwt.tokens import RefreshToken
-from smtplib import SMTPResponseException
 
-from django.conf import settings
 from api.permissions import AdminOrModeratorOrAuthorOrReadOnly, AdminOrReadOnly
 from api.serializers import (CategorySerializer, CommentSerializer,
                              GenreSerializer, GettokenSerializer,
                              ReviewSerializer, SignupSerializer,
                              TitleSerializer)
-
-        
 from reviews.models import Category, Genre, Review, Title, User
 
 
@@ -29,14 +27,17 @@ EMAIL_SUBJECT = 'Сервис YaMDB ждет подтверждания email'
 EMAIL_BODY = (
     'Для подтверждения email воспользуйтесь этим кодом: {code}'
 )
-SEND_EMAIL = 'Код подтверждения отправлен на почту {email}'
+SEND_EMAIL = 'Код подтверждения отправлен на почту {email}.'
 USERNAME_USED = 'Пользователь {username} уже существует!'
 EMAIL_USED = 'Почта {email} используется другим пользователем!'
 SEND_EMAIL_ERROR = (
-    'Не удалось отправь электронное письмо на {email}.'
+    'Не удалось отправь электронное письмо на {email}. '
     'Код ошибки: {code}. Ошибка: {error}.'
 )
-SEND_EMAIL_ERROR_JSON = 'Не удалось отправь электронное письмо на {email}.'
+SEND_EMAIL_ERROR_JSON = (
+    'Не удалось отправить электронное письмо на {email}! '
+    'Пользователь {username} не создан!'
+)
 
 
 def send_email_with_confirmation_code(
@@ -63,7 +64,6 @@ def send_email_with_confirmation_code(
             {'status': SEND_EMAIL.format(email=email)},
             status=status.HTTP_200_OK
         )
-
     except SMTPResponseException as error:
         print(
             SEND_EMAIL_ERROR.format(
@@ -71,7 +71,11 @@ def send_email_with_confirmation_code(
             )
         )
         return Response(
-            {'status': SEND_EMAIL_ERROR_JSON.format(email=email)},
+            {
+                'status': SEND_EMAIL_ERROR_JSON.format(
+                    email=email, username=username
+                )
+            },
             status=status.HTTP_400_BAD_REQUEST
         )
 
@@ -176,21 +180,23 @@ def signup(request):
     if serializer.is_valid():
         username = serializer.validated_data['username']
         email = serializer.validated_data['email']
-        user_exist = User.objects.filter(username=username).exists()
+        user_exist_flag = User.objects.filter(username=username).exists()
         # Пользователь может быть создан ранее посредством
         # панели администрирования, тогда confirmation_code не будет задан
         if (
-            user_exist
+            user_exist_flag
             and not User.objects.get(username=username).confirmation_code
         ):
             confirmation_code = generate_confirmation_code()
-            send_email_with_confirmation_code(email, confirmation_code, False)
+            return send_email_with_confirmation_code(
+                email, confirmation_code, False)
         # Пользователь может быть создан ранее посредством API,
         # тогда confirmation_code будет задан
-        elif user_exist:
+        elif user_exist_flag:
             confirmation_code = User.objects.get(
                 username=username).confirmation_code
-            send_email_with_confirmation_code(email, confirmation_code, False)
+            return send_email_with_confirmation_code(
+                email, confirmation_code, False)
         # Пользователь создается впервые
         else:
             if User.objects.filter(username=username).exists():
@@ -204,7 +210,7 @@ def signup(request):
                     status=status.HTTP_400_BAD_REQUEST
                 )
             confirmation_code = generate_confirmation_code()
-            send_email_with_confirmation_code(
+            return send_email_with_confirmation_code(
                 email, confirmation_code, True, username
             )
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
