@@ -1,4 +1,16 @@
 ###
+GET http://127.0.0.1:8000/api/v1/categories/
+###
+GET http://127.0.0.1:8000/api/v1/genres/
+###
+GET http://127.0.0.1:8000/api/v1/titles/
+###
+GET http://127.0.0.1:8000/api/v1/titles/1/reviews/
+###
+GET http://127.0.0.1:8000/api/v1/titles/1/reviews/6/comments/
+###
+GET http://127.0.0.1:8000/api/v1/titles/1/reviews/6/comments/
+###
 POST http://127.0.0.1:8000/api/v1/auth/signup/
 Content-Type: application/json
 
@@ -12,7 +24,7 @@ Content-Type: application/json
 
 {
     "username": "admin3",
-    "confirmation_code": "FIIQWdemi1QiHDp9tDDqme9leTgSBAOOQk555ztPwZ8qJdwo58DBGMykUfTybndj"
+    "confirmation_code": "MdgdrEG993S8KNeQHPy9ei0yYsoCTD1ZY4Bhij6wz9cGY9b0vdlFlNgAzmPdcLzC"
 }
 ###
 GET http://127.0.0.1:8000/api/v1/categories/
@@ -28,7 +40,7 @@ Content-Type: application/json
 # admin:
 ###
 POST http://127.0.0.1:8000/api/v1/categories/
-Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNjczMzI5ODg5LCJpYXQiOjE2NzIxMjAyODksImp0aSI6IjM5YjQzZTVhZjQ0OTQ3ZGJhOWZjOWNlNDg3ZTFlM2QzIiwidXNlcl9pZCI6MX0.RpJ5EbY0_vkj-09qFYVx-CCkyJT0k-TWwjOjhyP0Brc
+Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNjczMzY1NjczLCJpYXQiOjE2NzIxNTYwNzMsImp0aSI6IjNmNTAzYzYzNDgzMTRjMzhiNzJiNzg1ZTBkMTQ4Yzc2IiwidXNlcl9pZCI6MTA5fQ.CKuUL6AN-wLFMucfEaGVH-TX-audRwAr7vX1ZPUZAZE
 Content-Type: application/json
 
 {

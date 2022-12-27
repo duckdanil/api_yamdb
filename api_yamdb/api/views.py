@@ -170,7 +170,7 @@ class UserViewSet(ModelViewSet):
         detail=False,
         permission_classes=(IsAuthenticated,),
         url_path='me'
-        )
+    )
     def get_user_info(self, request):
         serializer = UserSerializer(request.user)
         if request.method == 'PATCH':
@@ -185,7 +185,8 @@ class UserViewSet(ModelViewSet):
         return Response(serializer.data)
 
 
-def signup():
+@api_view(['POST'])
+def signup(request):
     """
     Пользователь отправляет POST-запрос на добавление нового пользователя
     с параметрами email и username. Функция отправляет письмо с кодом
