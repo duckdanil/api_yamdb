@@ -188,6 +188,9 @@ def signup(request):
             and not User.objects.get(username=username).confirmation_code
         ):
             confirmation_code = generate_confirmation_code()
+            user = User.objects.get(username=username)
+            user.confirmation_code = confirmation_code
+            user.save()
             return send_email_with_confirmation_code(
                 email, confirmation_code, False)
         # Пользователь может быть создан ранее посредством API,

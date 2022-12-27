@@ -1,13 +1,11 @@
 import datetime as dt
 
-from rest_framework.serializers import (CharField, IntegerField,
+from django.conf import settings
+from rest_framework.serializers import (CharField, EmailField, IntegerField,
                                         ModelSerializer, Serializer,
                                         SlugRelatedField, ValidationError)
 from rest_framework.validators import UniqueTogetherValidator
-
-from django.conf import settings
 from reviews.models import Category, Comment, Genre, Review, Title, User
-
 
 REVIEW_EXIST = 'Можно оставить только один отзыв на произведение!'
 BAD_USERNAME = 'Нельзя использовать в качестве username {username}'
@@ -94,12 +92,13 @@ class UserSerializer(ModelSerializer):
         )
 
 
-class SignupSerializer(ModelSerializer):
+class SignupSerializer(Serializer):
     """Сериализатор для функции Signup."""
 
-    class Meta:
-        model = User
-        fields = ('email', 'username')
+    username = CharField(
+        required=True, max_length=settings.MAX_LENGTH_USERNAME)
+    email = EmailField(
+        required=True, max_length=settings.MAX_LENGTH_EMAIL)
 
     def validate_username(self, value):
         if value.lower() == 'me':
