@@ -1,6 +1,6 @@
 import datetime as dt
 
-from rest_framework.serializers import (CharField, EmailField, IntegerField,
+from rest_framework.serializers import (CharField, IntegerField,
                                         ModelSerializer, Serializer,
                                         SlugRelatedField, ValidationError)
 from rest_framework.validators import UniqueTogetherValidator
@@ -94,12 +94,12 @@ class UserSerializer(ModelSerializer):
         )
 
 
-class SignupSerializer(Serializer):
+class SignupSerializer(ModelSerializer):
     """Сериализатор для функции Signup."""
 
-    email = EmailField(max_length=settings.MAX_LENGTH_EMAIL, allow_blank=False)
-    username = CharField(
-        required=True, max_length=settings.MAX_LENGTH_USERNAME)
+    class Meta:
+        model = User
+        fields = ('email', 'username')
 
     def validate_username(self, value):
         if value.lower() == 'me':
@@ -107,9 +107,11 @@ class SignupSerializer(Serializer):
         return value
 
 
-class GettokenSerializer(ModelSerializer):
+class GettokenSerializer(Serializer):
     """Сериализатор для функции get_token."""
 
     username = CharField(
         required=True, max_length=settings.MAX_LENGTH_USERNAME)
-    confirmation_code = CharField(required=True)
+    confirmation_code = CharField(
+        required=True, max_length=settings.CONFIRMATION_CODE_LENGTH
+    )
