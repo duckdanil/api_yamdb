@@ -1,4 +1,8 @@
+import os
+
+from datetime import timedelta
 from pathlib import Path
+from dotenv import load_dotenv
 
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -23,6 +27,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'reviews.apps.ReviewsConfig',
     'api.apps.ApiConfig',
+    'rest_framework',
+    'rest_framework_simplejwt',
 ]
 
 MIDDLEWARE = [
@@ -120,3 +126,33 @@ MAX_LENGTH_USERNAME = 150
 MIN_YEAR_TITLE = 1
 SMALL_YEAR_MESSAGE = 'Год не должен быть меньше {MIN_YEAR_TITLE}'
 BIG_YEAR_MESSAGE = 'Указать год из будущего не получится!'
+# Email
+load_dotenv()
+# SMTP backend
+# EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+# Backend для эмуляции почтового сервера
+EMAIL_BACKEND = 'django.core.mail.backends.filebased.EmailBackend'
+# Директория для писем при эмуляции
+EMAIL_FILE_PATH = os.path.join(BASE_DIR, 'sent_emails')
+
+EMAIL_HOST = os.getenv('EMAIL_HOST')
+EMAIL_PORT = os.getenv('EMAIL_PORT')
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
+EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS')
+CONFIRMATION_CODE_LENGTH = 64
+
+# Работа с токенами
+REST_FRAMEWORK = {
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.AllowAny',
+        # 'rest_framework.permissions.IsAuthenticated',
+    ],
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ]
+}
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(days=14),
+    'AUTH_HEADER_TYPES': ('Bearer',),
+}

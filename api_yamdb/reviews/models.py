@@ -9,10 +9,13 @@ from django.conf import settings
 
 LENGTH_TEXT = 15
 MAX_LENGTH_TEXT = 256
+ADMIN = 'admin'
+USER = 'user'
+MODERATOR = 'moderator'
 ROLE = [
-    ('user', 'Пользователь'),
-    ('moderator', 'Модератор'),
-    ('admin', 'Администратор')
+    (USER, 'Пользователь'),
+    (MODERATOR, 'Модератор'),
+    (ADMIN, 'Администратор')
 ]
 
 
@@ -20,7 +23,7 @@ class User(AbstractUser):
     """Кастомная модель пользователя."""
 
     email = models.EmailField(
-        max_length=settings.MAX_LENGTH_EMAIL,
+        max_length=settings.MAX_LENGTH_EMAIL, unique=True
     )
     bio = models.TextField(
         'Биография',
@@ -32,18 +35,23 @@ class User(AbstractUser):
         default=ROLE[0],
         max_length=9
     )
+    confirmation_code = models.CharField(
+        'Код подтверждения для API',
+        blank=True,
+        max_length=settings.CONFIRMATION_CODE_LENGTH
+    )
 
     @property
     def is_admin(self):
-        return self.role == "admin" or self.is_superuser
+        return self.role == ADMIN or self.is_superuser
 
     @property
     def is_moderator(self):
-        return self.role == "moderator"
+        return self.role == MODERATOR
 
     @property
     def is_user(self):
-        return self.role == "user"
+        return self.role == USER
 
 
 class CategoryGenreCummonModel(models.Model):
