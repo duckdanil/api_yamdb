@@ -1,12 +1,6 @@
 import random
 from string import ascii_lowercase, ascii_uppercase, digits
 
-from api.permissions import AdminOrModeratorOrAuthorOrReadOnly, AdminOrReadOnly
-from api.serializers import (CategorySerializer, CommentSerializer,
-                             GenreSerializer, GettokenSerializer,
-                             ReviewSerializer, SignupSerializer,
-                             TitleSerializer)
-from django.conf import settings
 from django.core.mail import send_mail
 from django.db.models import Avg
 from django.shortcuts import get_object_or_404
@@ -17,7 +11,15 @@ from rest_framework.mixins import (CreateModelMixin, DestroyModelMixin,
                                    ListModelMixin)
 from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet, ModelViewSet
+
+from django.conf import settings
+from api.permissions import AdminOrModeratorOrAuthorOrReadOnly, AdminOrReadOnly
+from api.serializers import (CategorySerializer, CommentSerializer,
+                             GenreSerializer, GettokenSerializer,
+                             ReviewSerializer, SignupSerializer,
+                             TitleSerializer)
 from reviews.models import Category, Genre, Review, Title, User
+
 
 EMAIL_THEME = 'Сервис YaMDB ждет подтверждания email'
 EMAIL_BODY = 'Для подтверждения email воспользуйтесь этим кодом: {code}'
@@ -152,7 +154,6 @@ def signup(request):
                 k=settings.CONFIRMATION_CODE_LENGTH
             )
         )
-        print(confirmation_code)
         try:
             send_email_with_confirmation_code(email, confirmation_code)
             User.objects.create(
