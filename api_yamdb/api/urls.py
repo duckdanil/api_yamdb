@@ -24,6 +24,5 @@ router_v1.register('users', UserViewSet, basename='users')
 urlpatterns = [
     path('v1/auth/signup/', signup, name='signup'),
     path('v1/auth/token/', get_token, name='get_token'),
-    # path('v1/users/me/', patch_me, name='patch_me'),
     path('v1/', include(router_v1.urls))
 ]

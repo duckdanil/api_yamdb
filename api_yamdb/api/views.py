@@ -162,29 +162,6 @@ class CommentViewSet(ModelViewSet):
         serializer.save(author=self.request.user, review=review)
 
 
-class UserViewSet(ModelViewSet):
-    """Работа с пользователями."""
-
-    queryset = User.objects.all()
-    permission_classes = [IsAdminUser, ]
-    serializer_class = UserSerializer
-
-
-    # # Работа с GET /users/me/
-    # @action(
-    #     detail=False,
-    #     methods=['patch', ],
-    #     url_path='me',
-    #     permission_classes=[IsAuthenticated],
-    # )
-    # def edit_user(self, request):
-    #     user = self.request.user
-    #     serializer = self.get_serializer(user, many=False, data=request.data)
-    #     if serializer.is_valid():
-    #         serializer.save()
-    #     return Response(serializer.data, status=status.HTTP_200_OK)
-
-
 @api_view(['POST'])
 def signup(request):
     """
