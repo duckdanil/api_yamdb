@@ -20,41 +20,66 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 from django.conf import settings
 from reviews.models import Category, Genre, Review, Title, User
+from smtplib import SMTPResponseException
 
 
-EMAIL_THEME = 'Сервис YaMDB ждет подтверждания email'
+EMAIL_SUBJECT = 'Сервис YaMDB ждет подтверждания email'
 EMAIL_BODY = 'Для подтверждения email воспользуйтесь этим кодом: {code}'
 SEND_EMAIL = 'Код подтверждения отправлен на почту {email}'
 USERNAME_USED = 'Пользователь {username} уже существует!'
 EMAIL_USED = 'Почта {email} используется другим пользователем!'
-SEND_MAIL_ERROR = (
-    'Не удалось отправь электронное письмо на {email}. Ошибка: {error}'
+SEND_EMAIL_ERROR = (
+    'Не удалось отправь электронное письмо на {email}.'
+    'Код ошибки: {code}. Ошибка: {error}.'
 )
+SEND_EMAIL_ERROR_JSON = 'Не удалось отправь электронное письмо на {email}.'
 
 
-def send_email_with_confirmation_code(email, confirmation_code):
+def send_email_with_confirmation_code(
+    email, confirmation_code, add_user, username=''
+):
     """
     Сервис YaMDB отправляет письмо с кодом подтверждения
     (confirmation_code) на указанный адрес email.
-    https://docs.djangoproject.com/en/4.1/topics/email/
-    
-    Для тестирования эмулятора в режиме отладки выполнить в консоли:
-    from api.views import send_email_with_confirmation_code
-    send_email_with_confirmation_code('first_user@yandex.ru', '12345')
     """
     try:
         send_mail(
-            EMAIL_THEME,
+            EMAIL_SUBJECT,
             EMAIL_BODY.format(code=confirmation_code),
             settings.EMAIL_HOST_USER,
             [email, ],
             fail_silently=False,
         )
-    except Exception as error:
+        if add_user:
+            User.objects.create(
+                username=username, email=email,
+                confirmation_code=confirmation_code
+            )
         return Response(
-            {'status': SEND_MAIL_ERROR.format(email=email, error=error)},
-            status=status.HTTP_408_REQUEST_TIMEOUT
+            {'status': SEND_EMAIL.format(email=email)},
+            status=status.HTTP_200_OK
         )
+
+    except SMTPResponseException as error:
+        print(
+            SEND_EMAIL_ERROR.format(
+                email=email, code=error.smtp_code, error=error.smtp_error
+            )
+        )
+        return Response(
+            {'status': SEND_EMAIL_ERROR_JSON.format(email=email)},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+
+def generate_confirmation_code():
+    """Генератор кода подтверждения."""
+    return (
+        ''.join(random.choices(
+            ascii_uppercase + digits + ascii_lowercase,
+            k=settings.CONFIRMATION_CODE_LENGTH)
+        )
+    )
 
 
 class ModelMixinSet(CreateModelMixin, ListModelMixin,
@@ -136,16 +161,6 @@ class UserViewSet(ModelViewSet):
     # serializer_class = UserSerializer
 
 
-def generate_confirmation_code():
-    """Генерирует код подтверждения."""
-    return (
-        ''.join(random.choices(
-            ascii_uppercase + digits + ascii_lowercase,
-            k=settings.CONFIRMATION_CODE_LENGTH)
-        )
-    )
-
-
 @api_view(['POST'])
 def signup(request):
     """
@@ -165,13 +180,13 @@ def signup(request):
             and not User.objects.get(username=username).confirmation_code
         ):
             confirmation_code = generate_confirmation_code()
-            send_email_with_confirmation_code(email, confirmation_code)
+            send_email_with_confirmation_code(email, confirmation_code, False)
         # Пользователь может быть создан ранее посредством API,
         # тогда confirmation_code будет задан
         elif user_exist:
             confirmation_code = User.objects.get(
                 username=username).confirmation_code
-            send_email_with_confirmation_code(email, confirmation_code)
+            send_email_with_confirmation_code(email, confirmation_code, False)
         # Пользователь создается впервые
         else:
             if User.objects.filter(username=username).exists():
@@ -185,15 +200,9 @@ def signup(request):
                     status=status.HTTP_400_BAD_REQUEST
                 )
             confirmation_code = generate_confirmation_code()
-            send_email_with_confirmation_code(email, confirmation_code)
-            User.objects.create(
-                username=username, email=email,
-                confirmation_code=confirmation_code
+            send_email_with_confirmation_code(
+                email, confirmation_code, True, username
             )
-        return Response(
-            {'status': SEND_EMAIL.format(email=email)},
-            status=status.HTTP_200_OK
-        )
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
