@@ -23,7 +23,7 @@ class User(AbstractUser):
     """Кастомная модель пользователя."""
 
     email = models.EmailField(
-        max_length=settings.MAX_LENGTH_EMAIL,
+        max_length=settings.MAX_LENGTH_EMAIL, unique=True
     )
     bio = models.TextField(
         'Биография',

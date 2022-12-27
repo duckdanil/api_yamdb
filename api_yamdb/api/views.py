@@ -14,14 +14,17 @@ from rest_framework.mixins import (CreateModelMixin, DestroyModelMixin,
 from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet, ModelViewSet
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework.permissions import IsAdminUser, IsAuthenticated
+from rest_framework.decorators import action
 
 from api.permissions import AdminOrModeratorOrAuthorOrReadOnly, AdminOrReadOnly
 from api.serializers import (CategorySerializer, CommentSerializer,
                              GenreSerializer, GettokenSerializer,
                              ReviewSerializer, SignupSerializer,
-                             TitleSerializer)
+                             TitleSerializer, UserSerializer)
 from reviews.models import Category, Genre, Review, Title, User
-
+from rest_framework import mixins
+from rest_framework import viewsets
 
 EMAIL_SUBJECT = 'Сервис YaMDB ждет подтверждания email'
 EMAIL_BODY = (
@@ -41,7 +44,7 @@ SEND_EMAIL_ERROR_JSON = (
 
 
 def send_email_with_confirmation_code(
-    email, confirmation_code, add_user, username=''
+    email, confirmation_code, add_user_flag, username=''
 ):
     """
     Сервис YaMDB отправляет письмо с кодом подтверждения
@@ -55,7 +58,7 @@ def send_email_with_confirmation_code(
             [email, ],
             fail_silently=False,
         )
-        if add_user:
+        if add_user_flag:
             User.objects.create(
                 username=username, email=email,
                 confirmation_code=confirmation_code
@@ -160,13 +163,26 @@ class CommentViewSet(ModelViewSet):
 
 
 class UserViewSet(ModelViewSet):
-    """
-    Работа с пользователями.
-    (в том числе работа с GET /users/me/)
-    """
+    """Работа с пользователями."""
 
-    ...
-    # serializer_class = UserSerializer
+    queryset = User.objects.all()
+    permission_classes = [IsAdminUser, ]
+    serializer_class = UserSerializer
+
+
+    # # Работа с GET /users/me/
+    # @action(
+    #     detail=False,
+    #     methods=['patch', ],
+    #     url_path='me',
+    #     permission_classes=[IsAuthenticated],
+    # )
+    # def edit_user(self, request):
+    #     user = self.request.user
+    #     serializer = self.get_serializer(user, many=False, data=request.data)
+    #     if serializer.is_valid():
+    #         serializer.save()
+    #     return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 @api_view(['POST'])
