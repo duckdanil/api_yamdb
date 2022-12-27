@@ -6,11 +6,16 @@ from rest_framework.mixins import (ListModelMixin, CreateModelMixin,
                                    DestroyModelMixin)
 from reviews.models import Category, Genre, Review, Title, User
 
+from rest_framework.permissions import IsAuthenticated, IsAdminUser
+from rest_framework import status
+from rest_framework.response import Response
+from rest_framework.decorators import action
 from api.permissions import AdminOrReadOnly, AdminOrModeratorOrAuthorOrReadOnly
 from api.serializers import (CategorySerializer, CommentSerializer,
                              GenreSerializer,
                              GettokenSerializer, ReviewSerializer,
-                             SignupSerializer, TitleSerializer)
+                             SignupSerializer, TitleSerializer,
+                             UserSerializer)
 
 
 class ModelMixinSet(CreateModelMixin, ListModelMixin,
@@ -51,17 +56,14 @@ class ReviewViewSet(ModelViewSet):
     serializer_class = ReviewSerializer
     permission_classes = (AdminOrModeratorOrAuthorOrReadOnly,)
 
+    def get_title(self):
+        return get_object_or_404(Title, pk=self.kwargs.get('title_id'))
+
     def get_queryset(self):
-        title = get_object_or_404(
-            Title,
-            id=self.kwargs.get('title_id'))
-        return title.reviews.all()
+        return self.get_title().reviews.all()
 
     def perform_create(self, serializer):
-        title = get_object_or_404(
-            Title,
-            id=self.kwargs.get('title_id'))
-        serializer.save(author=self.request.user, title=title)
+        serializer.save(author=self.request.user, title=self.get_title())
 
 
 class CommentViewSet(ModelViewSet):
@@ -69,17 +71,14 @@ class CommentViewSet(ModelViewSet):
     serializer_class = CommentSerializer
     permission_classes = (AdminOrModeratorOrAuthorOrReadOnly,)
 
+    def get_review(self):
+        return get_object_or_404(Review, pk=self.kwargs.get('review_id'))
+
     def get_queryset(self):
-        review = get_object_or_404(
-            Review,
-            id=self.kwargs.get('review_id'))
-        return review.comments.all()
+        return self.get_review().comments.all()
 
     def perform_create(self, serializer):
-        review = get_object_or_404(
-            Review,
-            id=self.kwargs.get('review_id'))
-        serializer.save(author=self.request.user, review=review)
+        serializer.save(author=self.request.user, title=self.get_review())
 
 
 class UserViewSet(ModelViewSet):
@@ -87,9 +86,28 @@ class UserViewSet(ModelViewSet):
     Работа с пользователями.
     (в том числе работа с GET /users/me/)
     """
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+    permission_classes = (IsAuthenticated, IsAdminUser,)
 
-    ...
-    # serializer_class = UserSerializer
+    @action(
+        methods=['GET', 'PATCH'],
+        detail=False,
+        permission_classes=(IsAuthenticated,),
+        url_path='me'
+        )
+    def get_user_info(self, request):
+        serializer = UserSerializer(request.user)
+        if request.method == 'PATCH':
+            if request.user.is_admin:
+                serializer = UserSerializer(
+                    request.user,
+                    data=request.data,
+                    partial=True)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.data)
 
 
 def signup():
