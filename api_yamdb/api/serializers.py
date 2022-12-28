@@ -89,8 +89,10 @@ class UserSerializer(ModelSerializer):
     class Meta:
         model = User
         fields = (
-            'email', 'username', 'first_name', 'last_name', 'bio', 'role'
+            'username', 'email', 'first_name', 'last_name', 'bio', 'role'
         )
+        # Защита, чтобы пользователи не могли перезаписать свою роль
+        read_only_fields = ('role',)
 
 
 class SignupSerializer(Serializer):

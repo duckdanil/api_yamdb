@@ -157,13 +157,14 @@ class CommentViewSet(ModelViewSet):
 
 
 class UserViewSet(ModelViewSet):
-    """
-    Работа с пользователями.
-    (в том числе работа с GET /users/me/)
-    """
+    """Работа с пользователями."""
+
     queryset = User.objects.all()
     serializer_class = UserSerializer
-    permission_classes = (IsAuthenticated, IsAdminUser,)
+    permission_classes = (IsAdminUser,)
+    # Для обработки запросов видат/api/v1/users/TestTest2/
+    lookup_field = 'username'
+    lookup_value_regex = '[\w.@+-]+'
 
     @action(
         methods=['GET', 'PATCH'],
@@ -172,17 +173,18 @@ class UserViewSet(ModelViewSet):
         url_path='me'
     )
     def get_user_info(self, request):
-        serializer = UserSerializer(request.user)
+        """Обрабатываем роут /api/v1/users/me/."""
+        if request.method == 'GET':
+            serializer = self.get_serializer(request.user)
         if request.method == 'PATCH':
-            if request.user.is_admin:
-                serializer = UserSerializer(
-                    request.user,
-                    data=request.data,
-                    partial=True)
-            serializer.is_valid(raise_exception=True)
+            serializer = self.get_serializer(
+                request.user, data=request.data, partial=True
+            )
+            if not serializer.is_valid():
+                return Response(
+                    serializer.errors, status=status.HTTP_400_BAD_REQUEST)
             serializer.save()
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        return Response(serializer.data)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 @api_view(['POST'])
