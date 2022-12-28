@@ -3,7 +3,7 @@ import datetime as dt
 from django.conf import settings
 from rest_framework.serializers import (CharField, EmailField, IntegerField,
                                         ModelSerializer, Serializer,
-                                        SlugRelatedField, ValidationError)
+                                        SlugRelatedField, ValidationError, RegexField)
 from rest_framework.validators import UniqueTogetherValidator
 
 from reviews.models import Category, Comment, Genre, Review, Title, User
@@ -126,8 +126,10 @@ class UserwithlockSerializer(ModelSerializer):
 class SignupSerializer(Serializer):
     """Сериализатор для функции Signup."""
 
-    username = CharField(
-        required=True, max_length=settings.MAX_LENGTH_USERNAME)
+    username = RegexField(
+        r'^[\w.@+-]+',
+        max_length=settings.MAX_LENGTH_USERNAME,
+        min_length=None, allow_blank=False)
     email = EmailField(
         required=True, max_length=settings.MAX_LENGTH_EMAIL)
 

@@ -18,7 +18,8 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.mixins import (CreateModelMixin, ListModelMixin,
                                   DestroyModelMixin)
 
-from api.permissions import AdminOrModeratorOrAuthorOrReadOnly, AdminOrReadOnly
+from api.permissions import (AdminOrModeratorOrAuthorOrReadOnly,
+                             AdminOrReadOnly, AdminOnly)
 from api.serializers import (CategorySerializer, CommentSerializer,
                              GenreSerializer, GettokenSerializer,
                              ReviewSerializer, SignupSerializer,
@@ -41,11 +42,11 @@ SEND_EMAIL_ERROR_JSON = (
     'Не удалось отправить электронное письмо на {email}! '
     'Пользователь {username} не создан!'
 )
+BAD_CONFIRMATION_CODE = 'Не корректный confirmation code: {code}!'
 
 
 def send_email_with_confirmation_code(
-    email, confirmation_code, add_user_flag, username=''
-):
+    email, confirmation_code, add_user_flag, username):
     """
     Сервис YaMDB отправляет письмо с кодом подтверждения
     (confirmation_code) на указанный адрес email.
@@ -64,7 +65,7 @@ def send_email_with_confirmation_code(
                 confirmation_code=confirmation_code
             )
         return Response(
-            {'status': SEND_EMAIL.format(email=email)},
+            {'email': email, 'username': username},
             status=status.HTTP_200_OK
         )
     except SMTPResponseException as error:
@@ -168,12 +169,13 @@ class UserViewSet(ModelViewSet):
 
     queryset = User.objects.all()
     serializer_class = UserSerializer
-    permission_classes = (IsAdminUser,)
+    permission_classes = (AdminOnly,)
     filter_backends = (SearchFilter,)
     search_fields = ('username', )
     # Для обработки запросов вида /api/v1/users/Test/
     lookup_field = 'username'
     lookup_value_regex = r'[\w.@+-]+'
+    http_method_names = ['get', 'post', 'patch', 'delete']
 
     @action(
         methods=['GET', 'PATCH'],
@@ -207,7 +209,8 @@ def signup(request):
     if serializer.is_valid():
         username = serializer.validated_data['username']
         email = serializer.validated_data['email']
-        user_exist_flag = User.objects.filter(username=username).exists()
+        user_exist_flag = User.objects.filter(
+            username=username, email=email).exists()
         # confirmation_code не задан -> пользователь создан посредством API
         # (роут /api/v1/users/) или панели администрирования
         if (
@@ -219,14 +222,14 @@ def signup(request):
             user.confirmation_code = confirmation_code
             user.save()
             return send_email_with_confirmation_code(
-                email, confirmation_code, False)
+                email, confirmation_code, False, username)
         # confirmation_code задан -> пользователь создан посредством API
         # ранее (роут /api/v1/auth/signup/) или панели администрирования
         elif user_exist_flag:
             confirmation_code = User.objects.get(
                 username=username).confirmation_code
             return send_email_with_confirmation_code(
-                email, confirmation_code, False)
+                email, confirmation_code, False, username)
         # confirmation_code не задан -> пользователь создается посредством API
         # впервые (роут /api/v1/auth/signup/)
         else:
@@ -258,9 +261,16 @@ def get_token(request):
     if serializer.is_valid():
         username = serializer.validated_data['username']
         confirmation_code = serializer.validated_data['confirmation_code']
-        user = get_object_or_404(
-            User, username=username, confirmation_code=confirmation_code
-        )
+        user = get_object_or_404(User, username=username)
+        if not user.confirmation_code == confirmation_code:
+            return Response(
+                {
+                    'status': BAD_CONFIRMATION_CODE.format(
+                        code=confirmation_code
+                    )
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
         return Response(
             {
                 'access': str(RefreshToken.for_user(user).access_token)
