@@ -18,6 +18,7 @@ class CategorySerializer(ModelSerializer):
     class Meta:
         model = Category
         exclude = ('id',)
+        lookup_field = 'slug'
 
 
 class GenreSerializer(ModelSerializer):
@@ -28,13 +29,14 @@ class GenreSerializer(ModelSerializer):
         exclude = ('id',)
 
 
-class TitleSerializer(ModelSerializer):
+class TitleReadSerializer(ModelSerializer):
     """Сериализатор для модели Title."""
 
-    category = SlugRelatedField(read_only=True, slug_field='name')
-    genre = GenreSerializer(many=True, required=False)
+    category = CategorySerializer(read_only=True)
+    genre = GenreSerializer(many=True, required=False, read_only=True)
     rating = IntegerField(
-        max_value=settings.MIN_SCORE, min_value=settings.MAX_SCORE
+        max_value=settings.MIN_SCORE, min_value=settings.MAX_SCORE,
+        required=False
     )
 
     class Meta:
@@ -54,6 +56,22 @@ class TitleSerializer(ModelSerializer):
         if value > int(dt.datetime.now().strftime('%Y')):
             raise ValidationError(settings.MAX_SCORE_MESSAGE)
         return value
+
+
+class TitleWriteSerializer(ModelSerializer):
+    category = SlugRelatedField(
+        queryset=Category.objects.all(),
+        slug_field='slug'
+    )
+    genre = SlugRelatedField(
+        queryset=Genre.objects.all(),
+        slug_field='slug',
+        many=True
+    )
+
+    class Meta:
+        fields = '__all__'
+        model = Title
 
 
 class ReviewSerializer(ModelSerializer):

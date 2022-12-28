@@ -6,10 +6,12 @@ from django.conf import settings
 from django.core.mail import send_mail
 from django.db.models import Avg
 from django.shortcuts import get_object_or_404
+from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import status
 from rest_framework.decorators import action, api_view
 from rest_framework.filters import SearchFilter
-from rest_framework.permissions import IsAuthenticated
+from api.filters import TitleFilter
+from rest_framework.permissions import IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet, GenericViewSet
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -21,7 +23,7 @@ from api.permissions import (AdminOrModeratorOrAuthorOrReadOnly,
 from api.serializers import (CategorySerializer, CommentSerializer,
                              GenreSerializer, GettokenSerializer,
                              ReviewSerializer, SignupSerializer,
-                             TitleSerializer, UserSerializer,
+                             TitleReadSerializer, UserSerializer, TitleWriteSerializer,
                              UserwithlockSerializer)
 from reviews.models import Category, Genre, Review, Title, User
 
@@ -121,8 +123,14 @@ class GenreViewSet(
 class TitleViewSet(ModelViewSet):
     """Работа с произведениями."""
     queryset = Title.objects.annotate(rating=Avg('reviews__score')).all()
-    serializer_class = TitleSerializer
     permission_classes = (AdminOrReadOnly,)
+    filter_backends = (DjangoFilterBackend, )
+    filterset_class = TitleFilter
+
+    def get_serializer_class(self):
+        if self.action in ('list', 'retrieve'):
+            return TitleReadSerializer
+        return TitleWriteSerializer
 
 
 class ReviewViewSet(ModelViewSet):
