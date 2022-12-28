@@ -7,6 +7,7 @@ from django.db import models
 
 LENGTH_TEXT = 15
 MAX_LENGTH_TEXT = 256
+MAX_LENGTH_SLUG = 50
 ADMIN = 'admin'
 USER = 'user'
 MODERATOR = 'moderator'
@@ -66,7 +67,7 @@ class CategoryGenreCummonModel(models.Model):
     slug = models.SlugField(
         'Уникальный slug',
         unique=True,
-        max_length=50,
+        max_length=MAX_LENGTH_SLUG,
         help_text='Введите уникальный идентификатор'
     )
 

@@ -11,8 +11,10 @@ from rest_framework.decorators import action, api_view
 from rest_framework.filters import SearchFilter
 from rest_framework.permissions import IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
-from rest_framework.viewsets import ModelViewSet
+from rest_framework.viewsets import ModelViewSet, GenericViewSet
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework.mixins import (CreateModelMixin, ListModelMixin,
+                                  DestroyModelMixin)
 
 from api.permissions import AdminOrModeratorOrAuthorOrReadOnly, AdminOrReadOnly
 from api.serializers import (CategorySerializer, CommentSerializer,
@@ -89,22 +91,30 @@ def generate_confirmation_code():
     )
 
 
-class CategoryViewSet(ModelViewSet):
+class CategoryViewSet(
+    CreateModelMixin, ListModelMixin, DestroyModelMixin, GenericViewSet
+):
     """Работа с категориями."""
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
     permission_classes = (AdminOrReadOnly,)
     filter_backends = (SearchFilter, )
     search_fields = ('name', )
+    lookup_field = 'slug'
+    lookup_value_regex = r'[-a-zA-Z0-9_]+'
 
 
-class GenreViewSet(ModelViewSet):
+class GenreViewSet(
+    CreateModelMixin, ListModelMixin, DestroyModelMixin, GenericViewSet
+):
     """Работа с жанрами."""
     queryset = Genre.objects.all()
     serializer_class = GenreSerializer
     permission_classes = (AdminOrReadOnly,)
     filter_backends = (SearchFilter,)
     search_fields = ('name', )
+    lookup_field = 'slug'
+    lookup_value_regex = r'[-a-zA-Z0-9_]+'
 
 
 class TitleViewSet(ModelViewSet):
@@ -153,7 +163,7 @@ class UserViewSet(ModelViewSet):
     permission_classes = (IsAdminUser,)
     filter_backends = (SearchFilter,)
     search_fields = ('username', )
-    # Для обработки запросов вида /api/v1/users/TestTest2/
+    # Для обработки запросов вида /api/v1/users/Test/
     lookup_field = 'username'
     lookup_value_regex = r'[\w.@+-]+'
 
