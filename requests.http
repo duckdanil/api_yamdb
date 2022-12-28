@@ -35,8 +35,6 @@ Content-Type: application/json
     "confirmation_code": "RipKMFoAp4gnB07Ab1D8PSYXDVgm5A4GhIPZc1l1NorQTUuGRjrLZMRR7o9J31YF"
 }
 ###
-GET http://127.0.0.1:8000/api/v1/categories/
-###
 POST http://127.0.0.1:8000/api/v1/categories/
 Content-Type: application/json
 
@@ -52,17 +50,17 @@ Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ0b2tlbl90eXBlIjoiY
 Content-Type: application/json
 
 {
-    "name": "Программирование",
-    "slug": "programme"
+    "name": "Программирование2",
+    "slug": "programme2"
 }
 
 ###
 # Приложение Users:
-# + admin3 ---> role admin
+# admin3 ---> role admin
 GET http://127.0.0.1:8000/api/v1/users/
 Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNjczMzI5ODg5LCJpYXQiOjE2NzIxMjAyODksImp0aSI6IjM5YjQzZTVhZjQ0OTQ3ZGJhOWZjOWNlNDg3ZTFlM2QzIiwidXNlcl9pZCI6MX0.RpJ5EbY0_vkj-09qFYVx-CCkyJT0k-TWwjOjhyP0Brc
 ###
-# + admin5 ---> role user
+# admin5 ---> role user
 GET http://127.0.0.1:8000/api/v1/users/
 Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNjczMzcxNTQ5LCJpYXQiOjE2NzIxNjE5NDksImp0aSI6IjI4N2RhMDFiOWY2NzRiMDZhM2U5NDRmZTQxZDkwMjI4IiwidXNlcl9pZCI6MTA4fQ.UZk3R03zs7tecCyUI33phNruBthI1SBVvUGVF5FGQS0
 ###
@@ -73,8 +71,8 @@ Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ0b2tlbl90eXBlIjoiY
 Content-Type: application/json
 
 {
-    "username": "TestTest2",
-    "email": "testtest2@test.ru"
+    "username": "TestTest3",
+    "email": "testtest3@test.ru"
 }
 ###
 # admin3  ---> role admin
@@ -88,7 +86,7 @@ Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ0b2tlbl90eXBlIjoiY
 Content-Type: application/json
 
 {
-    "bio": "Привет!"
+    "bio": "Привет2!"
 }
 ###
 # admin3  ---> role admin
@@ -105,6 +103,27 @@ Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ0b2tlbl90eXBlIjoiY
 Content-Type: application/json
 
 {
-    "bio": "Привет6"
+    "bio": "Привет7"
 }
 ###
+# + admin3  ---> role admin
+###
+PATCH http://127.0.0.1:8000/api/v1/users/TestTest2/
+Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNjczMzI5ODg5LCJpYXQiOjE2NzIxMjAyODksImp0aSI6IjM5YjQzZTVhZjQ0OTQ3ZGJhOWZjOWNlNDg3ZTFlM2QzIiwidXNlcl9pZCI6MX0.RpJ5EbY0_vkj-09qFYVx-CCkyJT0k-TWwjOjhyP0Brc
+Content-Type: application/json
+
+{
+    "bio": "Привет2!",
+    "role": "user"
+}
+###
+# admin5  ---> role user
+###
+PATCH http://127.0.0.1:8000/api/v1/users/TestTest2/
+Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNjczMzcxNTQ5LCJpYXQiOjE2NzIxNjE5NDksImp0aSI6IjI4N2RhMDFiOWY2NzRiMDZhM2U5NDRmZTQxZDkwMjI4IiwidXNlcl9pZCI6MTA4fQ.UZk3R03zs7tecCyUI33phNruBthI1SBVvUGVF5FGQS0
+Content-Type: application/json
+
+{
+    "bio": "Привет2!",
+    "role": "user"
+}

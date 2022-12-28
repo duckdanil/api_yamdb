@@ -18,7 +18,8 @@ from api.permissions import AdminOrModeratorOrAuthorOrReadOnly, AdminOrReadOnly
 from api.serializers import (CategorySerializer, CommentSerializer,
                              GenreSerializer, GettokenSerializer,
                              ReviewSerializer, SignupSerializer,
-                             TitleSerializer, UserSerializer)
+                             TitleSerializer, UserSerializer,
+                             UserwithlockSerializer)
 from reviews.models import Category, Genre, Review, Title, User
 
 
@@ -165,9 +166,9 @@ class UserViewSet(ModelViewSet):
     def get_user_info(self, request):
         """Обработка роута /api/v1/users/me/."""
         if request.method == 'GET':
-            serializer = self.get_serializer(request.user)
+            serializer = UserwithlockSerializer(request.user)
         if request.method == 'PATCH':
-            serializer = self.get_serializer(
+            serializer = UserwithlockSerializer(
                 request.user, data=request.data, partial=True
             )
             if not serializer.is_valid():

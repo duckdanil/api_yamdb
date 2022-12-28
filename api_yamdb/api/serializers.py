@@ -93,7 +93,16 @@ class UserSerializer(ModelSerializer):
         fields = (
             'username', 'email', 'first_name', 'last_name', 'bio', 'role'
         )
-        # Защита, чтобы пользователи не могли перезаписать свою роль
+
+
+class UserwithlockSerializer(ModelSerializer):
+    """Сериализатор для модели User. Запрещено изменение роли."""
+
+    class Meta:
+        model = User
+        fields = (
+            'username', 'email', 'first_name', 'last_name', 'bio', 'role'
+        )
         read_only_fields = ('role',)
 
 

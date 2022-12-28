@@ -32,7 +32,7 @@ class User(AbstractUser):
     role = models.CharField(
         'Роль',
         choices=ROLE,
-        default=ROLE[0],
+        default=USER,
         max_length=9
     )
     confirmation_code = models.CharField(
