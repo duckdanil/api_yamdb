@@ -7,24 +7,20 @@ from django.core.mail import send_mail
 from django.db.models import Avg
 from django.shortcuts import get_object_or_404
 from rest_framework import status
-from rest_framework.decorators import api_view
+from rest_framework.decorators import action, api_view
 from rest_framework.filters import SearchFilter
-from rest_framework.mixins import (CreateModelMixin, DestroyModelMixin,
-                                   ListModelMixin)
-from rest_framework.response import Response
-from rest_framework.viewsets import GenericViewSet, ModelViewSet
-from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.permissions import IsAdminUser, IsAuthenticated
-from rest_framework.decorators import action
+from rest_framework.response import Response
+from rest_framework.viewsets import ModelViewSet
+from rest_framework_simplejwt.tokens import RefreshToken
 
 from api.permissions import AdminOrModeratorOrAuthorOrReadOnly, AdminOrReadOnly
 from api.serializers import (CategorySerializer, CommentSerializer,
                              GenreSerializer, GettokenSerializer,
                              ReviewSerializer, SignupSerializer,
-                             TitleSerializer, UserSerializer)
+                             TitleSerializer, UserSerializer,
+                             UserwithlockSerializer)
 from reviews.models import Category, Genre, Review, Title, User
-from rest_framework import mixins
-from rest_framework import viewsets
 
 EMAIL_SUBJECT = 'Сервис YaMDB ждет подтверждания email'
 EMAIL_BODY = (
@@ -93,12 +89,6 @@ def generate_confirmation_code():
     )
 
 
-class ModelMixinSet(CreateModelMixin, ListModelMixin,
-                    DestroyModelMixin, GenericViewSet):
-    """Сборный миксин сет"""
-    pass
-
-
 class CategoryViewSet(ModelViewSet):
     """Работа с категориями."""
     queryset = Category.objects.all()
@@ -122,8 +112,6 @@ class TitleViewSet(ModelViewSet):
     queryset = Title.objects.annotate(rating=Avg('reviews__score')).all()
     serializer_class = TitleSerializer
     permission_classes = (AdminOrReadOnly,)
-    filter_backends = (SearchFilter,)
-    search_fields = ('name', )
 
 
 class ReviewViewSet(ModelViewSet):
@@ -147,6 +135,7 @@ class CommentViewSet(ModelViewSet):
     permission_classes = (AdminOrModeratorOrAuthorOrReadOnly,)
 
     def get_review(self):
+        get_object_or_404(Title, pk=self.kwargs.get('title_id'))
         return get_object_or_404(Review, pk=self.kwargs.get('review_id'))
 
     def get_queryset(self):
@@ -162,9 +151,11 @@ class UserViewSet(ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
     permission_classes = (IsAdminUser,)
-    # Для обработки запросов видат/api/v1/users/TestTest2/
+    filter_backends = (SearchFilter,)
+    search_fields = ('username', )
+    # Для обработки запросов вида /api/v1/users/TestTest2/
     lookup_field = 'username'
-    lookup_value_regex = '[\w.@+-]+'
+    lookup_value_regex = r'[\w.@+-]+'
 
     @action(
         methods=['GET', 'PATCH'],
@@ -173,11 +164,11 @@ class UserViewSet(ModelViewSet):
         url_path='me'
     )
     def get_user_info(self, request):
-        """Обрабатываем роут /api/v1/users/me/."""
+        """Обработка роута /api/v1/users/me/."""
         if request.method == 'GET':
-            serializer = self.get_serializer(request.user)
+            serializer = UserwithlockSerializer(request.user)
         if request.method == 'PATCH':
-            serializer = self.get_serializer(
+            serializer = UserwithlockSerializer(
                 request.user, data=request.data, partial=True
             )
             if not serializer.is_valid():
@@ -199,8 +190,8 @@ def signup(request):
         username = serializer.validated_data['username']
         email = serializer.validated_data['email']
         user_exist_flag = User.objects.filter(username=username).exists()
-        # Пользователь может быть создан ранее посредством
-        # панели администрирования, тогда confirmation_code не будет задан
+        # confirmation_code не задан -> пользователь создан посредством API
+        # (роут /api/v1/users/) или панели администрирования
         if (
             user_exist_flag
             and not User.objects.get(username=username).confirmation_code
@@ -211,14 +202,15 @@ def signup(request):
             user.save()
             return send_email_with_confirmation_code(
                 email, confirmation_code, False)
-        # Пользователь может быть создан ранее посредством API,
-        # тогда confirmation_code будет задан
+        # confirmation_code задан -> пользователь создан посредством API
+        # ранее (роут /api/v1/auth/signup/) или панели администрирования
         elif user_exist_flag:
             confirmation_code = User.objects.get(
                 username=username).confirmation_code
             return send_email_with_confirmation_code(
                 email, confirmation_code, False)
-        # Пользователь создается впервые
+        # confirmation_code не задан -> пользователь создается посредством API
+        # впервые (роут /api/v1/auth/signup/)
         else:
             if User.objects.filter(username=username).exists():
                 return Response(

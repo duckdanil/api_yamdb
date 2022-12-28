@@ -5,6 +5,7 @@ from rest_framework.serializers import (CharField, EmailField, IntegerField,
                                         ModelSerializer, Serializer,
                                         SlugRelatedField, ValidationError)
 from rest_framework.validators import UniqueTogetherValidator
+
 from reviews.models import Category, Comment, Genre, Review, Title, User
 
 REVIEW_EXIST = 'Можно оставить только один отзыв на произведение!'
@@ -91,7 +92,16 @@ class UserSerializer(ModelSerializer):
         fields = (
             'username', 'email', 'first_name', 'last_name', 'bio', 'role'
         )
-        # Защита, чтобы пользователи не могли перезаписать свою роль
+
+
+class UserwithlockSerializer(ModelSerializer):
+    """Сериализатор для модели User. Запрещено изменение роли."""
+
+    class Meta:
+        model = User
+        fields = (
+            'username', 'email', 'first_name', 'last_name', 'bio', 'role'
+        )
         read_only_fields = ('role',)
 
 
