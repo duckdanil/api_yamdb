@@ -167,6 +167,7 @@ class UserViewSet(ModelViewSet):
     # Для обработки запросов вида /api/v1/users/Test/
     lookup_field = 'username'
     lookup_value_regex = r'[\w.@+-]+'
+    http_method_names = ['get', 'post', 'patch', 'delete']
 
     @action(
         methods=['GET', 'PATCH'],
