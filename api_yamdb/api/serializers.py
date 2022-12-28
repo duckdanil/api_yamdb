@@ -3,14 +3,25 @@ import datetime as dt
 from django.conf import settings
 from rest_framework.serializers import (CharField, EmailField, IntegerField,
                                         ModelSerializer, Serializer,
-                                        SlugRelatedField, ValidationError)
-from rest_framework.validators import UniqueTogetherValidator
+                                        SlugRelatedField, ValidationError, CurrentUserDefault)
+from django.shortcuts import get_object_or_404
 
 from reviews.models import Category, Comment, Genre, Review, Title, User
 
 REVIEW_EXIST = 'Можно оставить только один отзыв на произведение!'
 BAD_USERNAME = 'Нельзя использовать в качестве username {username}!'
-
+MIN_YEAR_ERROR = (
+    'Год не может быть меньше {min_year}! Ваше значение: {year}.'
+)
+MAX_YEAR_ERROR = (
+    'Год не может быть больше {max_year}! Ваше значение: {year}.'
+)
+MIN_SCORE_ERROR = (
+    'Оценка не может быть меньше {min_score}! Ваша оценка: {score}.'
+)
+MAX_SCORE_ERROR = (
+    'Оценка не может быть больше {max_score}! Ваша оценка: {score}.'
+)
 
 class CategorySerializer(ModelSerializer):
     """Сериализатор для модели Category."""
@@ -43,16 +54,14 @@ class TitleSerializer(ModelSerializer):
 
     def validate_year(self, value):
         if value < settings.MIN_YEAR_TITLE:
-            raise ValidationError(settings.SMALL_YEAR_MESSAGE)
-        if value > int(dt.datetime.now().strftime('%Y')):
-            raise ValidationError(settings.BIG_YEAR_MESSAGE)
-        return value
-
-    def validate_score(self, value):
-        if value < settings.MIN_SCORE:
-            raise ValidationError(settings.MIN_SCORE_MESSAGE)
-        if value > int(dt.datetime.now().strftime('%Y')):
-            raise ValidationError(settings.MAX_SCORE_MESSAGE)
+            raise ValidationError(MIN_YEAR_ERROR.format(
+                min_year=settings.MIN_YEAR_TITLE, year=value)
+            )
+        current_year = int(dt.datetime.now().strftime('%Y'))
+        if value > current_year:
+            raise ValidationError(MAX_YEAR_ERROR.format(
+                max_year=current_year, year=value)
+            )
         return value
 
 
@@ -64,14 +73,20 @@ class ReviewSerializer(ModelSerializer):
     class Meta:
         model = Review
         fields = '__all__'
-        validators = [
-            UniqueTogetherValidator(
-                queryset=Review.objects.all(),
-                fields=('title', 'author'),
-                message=REVIEW_EXIST
-            )
-        ]
         read_only_fields = ('title',)
+
+    def validate(self, data):
+        request = self.context.get('request')
+        title = get_object_or_404(
+            Title, pk=self.context.get('view').kwargs.get('title_id')
+        )
+        if (
+            request.method == 'POST'
+            and Review.objects.filter(
+                title=title, author=request.user).exists()
+        ):
+            raise ValidationError(REVIEW_EXIST)
+        return data
 
 
 class CommentSerializer(ModelSerializer):
