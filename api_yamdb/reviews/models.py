@@ -1,11 +1,9 @@
 import datetime as dt
 
+from django.conf import settings
 from django.contrib.auth.models import AbstractUser
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
-
-from django.conf import settings
-
 
 LENGTH_TEXT = 15
 MAX_LENGTH_TEXT = 256

@@ -8,7 +8,6 @@ from rest_framework.validators import UniqueTogetherValidator
 
 from reviews.models import Category, Comment, Genre, Review, Title, User
 
-
 REVIEW_EXIST = 'Можно оставить только один отзыв на произведение!'
 BAD_USERNAME = 'Нельзя использовать в качестве username {username}!'
 

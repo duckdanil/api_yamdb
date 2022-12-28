@@ -22,7 +22,6 @@ from api.serializers import (CategorySerializer, CommentSerializer,
                              UserwithlockSerializer)
 from reviews.models import Category, Genre, Review, Title, User
 
-
 EMAIL_SUBJECT = 'Сервис YaMDB ждет подтверждания email'
 EMAIL_BODY = (
     'Для подтверждения email воспользуйтесь этим кодом: {code}'
@@ -113,8 +112,6 @@ class TitleViewSet(ModelViewSet):
     queryset = Title.objects.annotate(rating=Avg('reviews__score')).all()
     serializer_class = TitleSerializer
     permission_classes = (AdminOrReadOnly,)
-    filter_backends = (SearchFilter,)
-    search_fields = ('name', )
 
 
 class ReviewViewSet(ModelViewSet):
@@ -138,6 +135,7 @@ class CommentViewSet(ModelViewSet):
     permission_classes = (AdminOrModeratorOrAuthorOrReadOnly,)
 
     def get_review(self):
+        get_object_or_404(Title, pk=self.kwargs.get('title_id'))
         return get_object_or_404(Review, pk=self.kwargs.get('review_id'))
 
     def get_queryset(self):
@@ -153,6 +151,8 @@ class UserViewSet(ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
     permission_classes = (IsAdminUser,)
+    filter_backends = (SearchFilter,)
+    search_fields = ('username', )
     # Для обработки запросов вида /api/v1/users/TestTest2/
     lookup_field = 'username'
     lookup_value_regex = r'[\w.@+-]+'
