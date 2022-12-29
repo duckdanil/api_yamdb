@@ -83,7 +83,7 @@ class ReviewSerializer(ModelSerializer):
         if (
             request.method == 'POST'
             and Review.objects.filter(
-                title=title, author=request.user).exists()
+                title=title.id, author=request.user).exists()
         ):
             raise ValidationError(REVIEW_EXIST)
         return data
