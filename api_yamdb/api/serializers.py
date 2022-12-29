@@ -62,7 +62,8 @@ class TitleReadSerializer(TitleBaseSerializer):
     Сериализатор для модели Title.
     GET запросы, т.е. action == 'list'
     """
-
+    category = CategorySerializer(read_only=True)
+    genre = GenreSerializer(many=True, required=False, read_only=True)
     rating = IntegerField()
 
 
@@ -92,22 +93,6 @@ class TitleWriteSerializer(TitleBaseSerializer):
         ).exists():
             raise ValidationError(TITLE_EXIST)
         return data
-
-
-class TitleWriteSerializer(ModelSerializer):
-    category = SlugRelatedField(
-        queryset=Category.objects.all(),
-        slug_field='slug'
-    )
-    genre = SlugRelatedField(
-        queryset=Genre.objects.all(),
-        slug_field='slug',
-        many=True
-    )
-
-    class Meta:
-        fields = '__all__'
-        model = Title
 
 
 class ReviewSerializer(ModelSerializer):
