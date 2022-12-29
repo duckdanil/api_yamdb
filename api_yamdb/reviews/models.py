@@ -252,6 +252,7 @@ class Comment(ReviewCommentCummonModel):
     review = models.ForeignKey(
         Review,
         on_delete=models.CASCADE,
+        blank=True,
         related_name='comments',
         verbose_name="Отзыв",
         help_text='Укажите отзыв, к которому будет относиться комментарий'
