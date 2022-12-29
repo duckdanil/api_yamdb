@@ -11,7 +11,7 @@ from rest_framework import status
 from rest_framework.decorators import action, api_view
 from rest_framework.filters import SearchFilter
 from api.filters import TitleFilter
-from rest_framework.permissions import IsAdminUser, IsAuthenticated
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet, GenericViewSet
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -23,8 +23,10 @@ from api.permissions import (AdminOrModeratorOrAuthorOrReadOnly,
 from api.serializers import (CategorySerializer, CommentSerializer,
                              GenreSerializer, GettokenSerializer,
                              ReviewSerializer, SignupSerializer,
-                             TitleReadSerializer, UserSerializer, TitleWriteSerializer,
-                             UserwithlockSerializer)
+                             UserSerializer,
+                             UserwithlockSerializer, TitleReadSerializer,
+                             TitleWriteSerializer)
+
 from reviews.models import Category, Genre, Review, Title, User
 
 EMAIL_SUBJECT = 'Сервис YaMDB ждет подтверждания email'
@@ -98,6 +100,7 @@ class CategoryViewSet(
     CreateModelMixin, ListModelMixin, DestroyModelMixin, GenericViewSet
 ):
     """Работа с категориями."""
+
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
     permission_classes = (AdminOrReadOnly,)
@@ -111,6 +114,7 @@ class GenreViewSet(
     CreateModelMixin, ListModelMixin, DestroyModelMixin, GenericViewSet
 ):
     """Работа с жанрами."""
+
     queryset = Genre.objects.all()
     serializer_class = GenreSerializer
     permission_classes = (AdminOrReadOnly,)
@@ -122,24 +126,26 @@ class GenreViewSet(
 
 class TitleViewSet(ModelViewSet):
     """Работа с произведениями."""
+
     queryset = Title.objects.annotate(rating=Avg('reviews__score')).all()
-    permission_classes = (AdminOrReadOnly,)
+    permission_classes = (AdminOrModeratorOrAuthorOrReadOnly,)
     filter_backends = (DjangoFilterBackend, )
     filterset_class = TitleFilter
 
     def get_serializer_class(self):
-        if self.action in ('list', 'retrieve'):
+        if self.action == 'list' or self.action == 'retrieve':
             return TitleReadSerializer
         return TitleWriteSerializer
 
 
 class ReviewViewSet(ModelViewSet):
     """Работа с отзывами."""
+
     serializer_class = ReviewSerializer
     permission_classes = (AdminOrModeratorOrAuthorOrReadOnly,)
 
     def get_title(self):
-        return get_object_or_404(Title, pk=self.kwargs.get('title_id'))
+        return Title.objects.get(pk=self.kwargs.get('title_id'))
 
     def get_queryset(self):
         return self.get_title().reviews.all()
@@ -150,6 +156,7 @@ class ReviewViewSet(ModelViewSet):
 
 class CommentViewSet(ModelViewSet):
     """Работа с комментариями."""
+
     serializer_class = CommentSerializer
     permission_classes = (AdminOrModeratorOrAuthorOrReadOnly,)
 
@@ -161,7 +168,7 @@ class CommentViewSet(ModelViewSet):
         return self.get_review().comments.all()
 
     def perform_create(self, serializer):
-        serializer.save(author=self.request.user, title=self.get_review())
+        serializer.save(author=self.request.user, review=self.get_review())
 
 
 class UserViewSet(ModelViewSet):

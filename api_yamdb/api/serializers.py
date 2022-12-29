@@ -4,12 +4,25 @@ from django.conf import settings
 from rest_framework.serializers import (CharField, EmailField, IntegerField,
                                         ModelSerializer, Serializer,
                                         SlugRelatedField, ValidationError, RegexField)
-from rest_framework.validators import UniqueTogetherValidator
+from django.shortcuts import get_object_or_404
 
 from reviews.models import Category, Comment, Genre, Review, Title, User
 
 REVIEW_EXIST = 'Можно оставить только один отзыв на произведение!'
+TITLE_EXIST = 'Указанное произведение уже существует в базе данных!'
 BAD_USERNAME = 'Нельзя использовать в качестве username {username}!'
+MIN_YEAR_ERROR = (
+    'Год не может быть меньше {min_year}! Ваше значение: {year}.'
+)
+MAX_YEAR_ERROR = (
+    'Год не может быть больше {max_year}! Ваше значение: {year}.'
+)
+MIN_SCORE_ERROR = (
+    'Оценка не может быть меньше {min_score}! Ваша оценка: {score}.'
+)
+MAX_SCORE_ERROR = (
+    'Оценка не может быть больше {max_score}! Ваша оценка: {score}.'
+)
 
 
 class CategorySerializer(ModelSerializer):
@@ -29,33 +42,54 @@ class GenreSerializer(ModelSerializer):
         exclude = ('id',)
 
 
-class TitleReadSerializer(ModelSerializer):
-    """Сериализатор для модели Title."""
+class TitleBaseSerializer(ModelSerializer):
+    """Базовый сериализатор для модели Title."""
 
-    category = CategorySerializer(read_only=True)
-    genre = GenreSerializer(many=True, required=False, read_only=True)
-    rating = IntegerField(
-        max_value=settings.MIN_SCORE, min_value=settings.MAX_SCORE,
-        required=False
-    )
+    category = SlugRelatedField(
+        queryset=Category.objects.all(), slug_field='slug')
+    genre = SlugRelatedField(
+        queryset=Genre.objects.all(), slug_field="slug", many=True)
 
     class Meta:
         model = Title
         fields = '__all__'
 
+
+class TitleReadSerializer(TitleBaseSerializer):
+    """
+    Сериализатор для модели Title.
+    GET запросы, т.е. action == 'list'
+    """
+
+    rating = IntegerField()
+
+
+class TitleWriteSerializer(TitleBaseSerializer):
+    """
+    Сериализатор для модели Title.
+    Другие запросы, т.е. action == 'retrieve'
+    """
+
     def validate_year(self, value):
         if value < settings.MIN_YEAR_TITLE:
-            raise ValidationError(settings.SMALL_YEAR_MESSAGE)
-        if value > int(dt.datetime.now().strftime('%Y')):
-            raise ValidationError(settings.BIG_YEAR_MESSAGE)
+            raise ValidationError(MIN_YEAR_ERROR.format(
+                min_year=settings.MIN_YEAR_TITLE, year=value)
+            )
+        current_year = int(dt.datetime.now().strftime('%Y'))
+        if value > current_year:
+            raise ValidationError(MAX_YEAR_ERROR.format(
+                max_year=current_year, year=value)
+            )
         return value
 
-    def validate_score(self, value):
-        if value < settings.MIN_SCORE:
-            raise ValidationError(settings.MIN_SCORE_MESSAGE)
-        if value > int(dt.datetime.now().strftime('%Y')):
-            raise ValidationError(settings.MAX_SCORE_MESSAGE)
-        return value
+    def validate(self, data):
+        if Title.objects.filter(
+                name=data.get('name'),
+                year=data.get('year'),
+                category_id=data.get('category').id
+        ).exists():
+            raise ValidationError(TITLE_EXIST)
+        return data
 
 
 class TitleWriteSerializer(ModelSerializer):
@@ -82,14 +116,20 @@ class ReviewSerializer(ModelSerializer):
     class Meta:
         model = Review
         fields = '__all__'
-        validators = [
-            UniqueTogetherValidator(
-                queryset=Review.objects.all(),
-                fields=('title', 'author'),
-                message=REVIEW_EXIST
-            )
-        ]
         read_only_fields = ('title',)
+
+    def validate(self, data):
+        request = self.context.get('request')
+        title = get_object_or_404(
+            Title, pk=self.context.get('view').kwargs.get('title_id')
+        )
+        if (
+            request.method == 'POST'
+            and Review.objects.filter(
+                title=title.id, author=request.user).exists()
+        ):
+            raise ValidationError(REVIEW_EXIST)
+        return data
 
 
 class CommentSerializer(ModelSerializer):
