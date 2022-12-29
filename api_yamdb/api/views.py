@@ -110,7 +110,7 @@ class GenreViewSet(
     """Работа с жанрами."""
     queryset = Genre.objects.all()
     serializer_class = GenreSerializer
-    permission_classes = (IsAuthenticated)
+    permission_classes = (AdminOrReadOnly,)
     filter_backends = (SearchFilter,)
     search_fields = ('name', )
     lookup_field = 'slug'
