@@ -1,12 +1,14 @@
 import datetime as dt
 
 from django.conf import settings
-from rest_framework.serializers import (CharField, EmailField, IntegerField,
-                                        ModelSerializer, Serializer,
-                                        SlugRelatedField, ValidationError, RegexField)
 from django.shortcuts import get_object_or_404
+from rest_framework.serializers import (CharField, EmailField, IntegerField,
+                                        ModelSerializer, RegexField,
+                                        Serializer, SlugRelatedField,
+                                        ValidationError)
 
 from reviews.models import Category, Comment, Genre, Review, Title, User
+
 
 REVIEW_EXIST = 'Можно оставить только один отзыв на произведение!'
 TITLE_EXIST = 'Указанное произведение уже существует в базе данных!'

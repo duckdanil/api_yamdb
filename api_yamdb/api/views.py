@@ -2,6 +2,14 @@ import random
 from smtplib import SMTPResponseException
 from string import ascii_lowercase, ascii_uppercase, digits
 
+from api.filters import TitleFilter
+from api.permissions import (AdminOnly, AdminOrModeratorOrAuthorOrReadOnly,
+                             AdminOrReadOnly)
+from api.serializers import (CategorySerializer, CommentSerializer,
+                             GenreSerializer, GettokenSerializer,
+                             ReviewSerializer, SignupSerializer,
+                             TitleReadSerializer, TitleWriteSerializer,
+                             UserSerializer, UserwithlockSerializer)
 from django.conf import settings
 from django.core.mail import send_mail
 from django.db.models import Avg
@@ -10,24 +18,15 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import status
 from rest_framework.decorators import action, api_view
 from rest_framework.filters import SearchFilter
-from api.filters import TitleFilter
+from rest_framework.mixins import (CreateModelMixin, DestroyModelMixin,
+                                   ListModelMixin)
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from rest_framework.viewsets import ModelViewSet, GenericViewSet
+from rest_framework.viewsets import GenericViewSet, ModelViewSet
 from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework.mixins import (CreateModelMixin, ListModelMixin,
-                                  DestroyModelMixin)
-
-from api.permissions import (AdminOrModeratorOrAuthorOrReadOnly,
-                             AdminOrReadOnly, AdminOnly)
-from api.serializers import (CategorySerializer, CommentSerializer,
-                             GenreSerializer, GettokenSerializer,
-                             ReviewSerializer, SignupSerializer,
-                             UserSerializer,
-                             UserwithlockSerializer, TitleReadSerializer,
-                             TitleWriteSerializer)
 
 from reviews.models import Category, Genre, Review, Title, User
+
 
 EMAIL_SUBJECT = 'Сервис YaMDB ждет подтверждания email'
 EMAIL_BODY = (
@@ -48,7 +47,8 @@ BAD_CONFIRMATION_CODE = 'Не корректный confirmation code: {code}!'
 
 
 def send_email_with_confirmation_code(
-    email, confirmation_code, add_user_flag, username):
+    email, confirmation_code, add_user_flag, username
+):
     """
     Сервис YaMDB отправляет письмо с кодом подтверждения
     (confirmation_code) на указанный адрес email.
