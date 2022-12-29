@@ -3,12 +3,13 @@ import datetime as dt
 from django.conf import settings
 from rest_framework.serializers import (CharField, EmailField, IntegerField,
                                         ModelSerializer, Serializer,
-                                        SlugRelatedField, ValidationError, CurrentUserDefault)
+                                        SlugRelatedField, ValidationError)
 from django.shortcuts import get_object_or_404
 
 from reviews.models import Category, Comment, Genre, Review, Title, User
 
 REVIEW_EXIST = 'Можно оставить только один отзыв на произведение!'
+TITLE_EXIST = 'Указанное произведение уже существует в базе данных!'
 BAD_USERNAME = 'Нельзя использовать в качестве username {username}!'
 MIN_YEAR_ERROR = (
     'Год не может быть меньше {min_year}! Ваше значение: {year}.'
@@ -22,6 +23,7 @@ MIN_SCORE_ERROR = (
 MAX_SCORE_ERROR = (
     'Оценка не может быть больше {max_score}! Ваша оценка: {score}.'
 )
+
 
 class CategorySerializer(ModelSerializer):
     """Сериализатор для модели Category."""
@@ -39,18 +41,33 @@ class GenreSerializer(ModelSerializer):
         exclude = ('id',)
 
 
-class TitleSerializer(ModelSerializer):
-    """Сериализатор для модели Title."""
+class TitleBaseSerializer(ModelSerializer):
+    """Базовый сериализатор для модели Title."""
 
-    category = SlugRelatedField(read_only=True, slug_field='name')
-    genre = GenreSerializer(many=True, required=False)
-    rating = IntegerField(
-        max_value=settings.MIN_SCORE, min_value=settings.MAX_SCORE
-    )
+    category = SlugRelatedField(
+        queryset=Category.objects.all(), slug_field='slug')
+    genre = SlugRelatedField(
+        queryset=Genre.objects.all(), slug_field="slug", many=True)
 
     class Meta:
         model = Title
         fields = '__all__'
+
+
+class TitleReadSerializer(TitleBaseSerializer):
+    """
+    Сериализатор для модели Title.
+    GET запросы, т.е. action == 'list'
+    """
+
+    rating = IntegerField()
+
+
+class TitleWriteSerializer(TitleBaseSerializer):
+    """
+    Сериализатор для модели Title.
+    Другие запросы, т.е. action == 'retrieve'
+    """
 
     def validate_year(self, value):
         if value < settings.MIN_YEAR_TITLE:
@@ -63,6 +80,15 @@ class TitleSerializer(ModelSerializer):
                 max_year=current_year, year=value)
             )
         return value
+
+    def validate(self, data):
+        if Title.objects.filter(
+                name=data.get('name'),
+                year=data.get('year'),
+                category_id=data.get('category').id
+        ).exists():
+            raise ValidationError(TITLE_EXIST)
+        return data
 
 
 class ReviewSerializer(ModelSerializer):

@@ -20,8 +20,9 @@ from api.permissions import AdminOrModeratorOrAuthorOrReadOnly, AdminOrReadOnly
 from api.serializers import (CategorySerializer, CommentSerializer,
                              GenreSerializer, GettokenSerializer,
                              ReviewSerializer, SignupSerializer,
-                             TitleSerializer, UserSerializer,
-                             UserwithlockSerializer)
+                             UserSerializer,
+                             UserwithlockSerializer, TitleReadSerializer,
+                             TitleWriteSerializer)
 from reviews.models import Category, Genre, Review, Title, User
 
 EMAIL_SUBJECT = 'Сервис YaMDB ждет подтверждания email'
@@ -123,8 +124,12 @@ class TitleViewSet(ModelViewSet):
     """Работа с произведениями."""
 
     queryset = Title.objects.annotate(rating=Avg('reviews__score')).all()
-    serializer_class = TitleSerializer
-    permission_classes = (AdminOrReadOnly,)
+    permission_classes = (AdminOrModeratorOrAuthorOrReadOnly,)
+
+    def get_serializer_class(self):
+        if self.action == 'list' or self.action == 'retrieve':
+            return TitleReadSerializer
+        return TitleWriteSerializer
 
 
 class ReviewViewSet(ModelViewSet):
@@ -134,8 +139,7 @@ class ReviewViewSet(ModelViewSet):
     permission_classes = (AdminOrModeratorOrAuthorOrReadOnly,)
 
     def get_title(self):
-        # return Title.objects.get(pk=self.kwargs.get('title_id'))
-        return get_object_or_404(Title, id=self.kwargs.get('title_id'))
+        return Title.objects.get(pk=self.kwargs.get('title_id'))
 
     def get_queryset(self):
         return self.get_title().reviews.all()
