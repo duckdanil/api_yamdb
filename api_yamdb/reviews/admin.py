@@ -15,14 +15,17 @@ class CategoryGenreAdmin(admin.ModelAdmin):
     search_fields = ('name', 'slug')
 
 
+@admin.register(Category)
 class CategoryAdmin(CategoryGenreAdmin):
     ...
 
 
+@admin.register(Genre)
 class GenreAdmin(CategoryGenreAdmin):
     ...
 
 
+@admin.register(Title)
 class TitleAdmin(admin.ModelAdmin):
     list_display = (
         'pk',
@@ -35,6 +38,7 @@ class TitleAdmin(admin.ModelAdmin):
     search_fields = ('name',)
 
 
+@admin.register(GenreTitle)
 class GenreTitleAdmin(admin.ModelAdmin):
     list_display = (
         'pk',
@@ -45,6 +49,7 @@ class GenreTitleAdmin(admin.ModelAdmin):
     search_fields = ('genre', 'title')
 
 
+@admin.register(Review)
 class ReviewAdmin(admin.ModelAdmin):
     list_display = (
         'pk',
@@ -58,6 +63,7 @@ class ReviewAdmin(admin.ModelAdmin):
     search_fields = ('author', 'title')
 
 
+@admin.register(Comment)
 class CommentAdmin(admin.ModelAdmin):
     list_display = (
         'pk',
@@ -71,9 +77,3 @@ class CommentAdmin(admin.ModelAdmin):
 
 
 admin.site.register(User)
-admin.site.register(Category, CategoryAdmin)
-admin.site.register(Genre, GenreAdmin)
-admin.site.register(Title, TitleAdmin)
-admin.site.register(GenreTitle, GenreTitleAdmin)
-admin.site.register(Review, ReviewAdmin)
-admin.site.register(Comment, CommentAdmin)
