@@ -27,7 +27,13 @@ MAX_SCORE_ERROR = (
 )
 
 
-class CategorySerializer(ModelSerializer):
+class CategoryGenreCummonSerializer(ModelSerializer):
+    """Сериализатор для моделей Category и Genre."""
+
+    ...
+
+
+class CategorySerializer(CategoryGenreCummonSerializer):
     """Сериализатор для модели Category."""
 
     class Meta:
@@ -36,7 +42,7 @@ class CategorySerializer(ModelSerializer):
         lookup_field = 'slug'
 
 
-class GenreSerializer(ModelSerializer):
+class GenreSerializer(CategoryGenreCummonSerializer):
     """Сериализатор для модели Genre."""
 
     class Meta:
